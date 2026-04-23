@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar Panel Material Simulator — Scientific Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a; --surface: #111827; --card: #1a2235; --border: #2a3a55;
+    --accent: #00d4ff; --accent2: #7c3aed; --accent3: #10b981; --accent4: #f59e0b;
+    --text: #e2e8f0; --muted: #64748b; --danger: #ef4444; --success: #10b981;
+    --al: #a8c7fa; --glass: #93c5fd; --ss: #c4b5fd; --new: #6ee7b7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #0d1b2a 0%, #1a0a3a 100%); border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { display: flex; align-items: center; gap: 14px; }
+  .header-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em; }
+  .header h1 span { color: var(--accent); }
+  .header-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .badge { background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.3); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; overflow-x: auto; }
+  .tab { padding: 14px 22px; font-size: 0.85rem; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-icon { margin-right: 6px; }
+
+  /* LAYOUT */
+  .main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* MATERIAL PROPERTY CARDS */
+  .mat-card { border-radius: 12px; padding: 20px; position: relative; overflow: hidden; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+  .mat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .mat-card.al { background: linear-gradient(135deg, #1a2a4a 0%, #0f1e35 100%); border: 1px solid rgba(168,199,250,0.25); }
+  .mat-card.glass { background: linear-gradient(135deg, #1a2840 0%, #0f1c33 100%); border: 1px solid rgba(147,197,253,0.25); }
+  .mat-card.ss { background: linear-gradient(135deg, #21183a 0%, #160f2c 100%); border: 1px solid rgba(196,181,253,0.25); }
+  .mat-card.new { background: linear-gradient(135deg, #0f2a20 0%, #091c15 100%); border: 1px solid rgba(110,231,183,0.25); }
+  .mat-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+  .mat-formula { font-size: 0.75rem; color: var(--muted); font-family: monospace; margin-bottom: 16px; }
+  .mat-glow { position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; border-radius: 50%; opacity: 0.15; filter: blur(20px); }
+  .mat-card.al .mat-glow { background: var(--al); }
+  .mat-card.glass .mat-glow { background: var(--glass); }
+  .mat-card.ss .mat-glow { background: var(--ss); }
+  .mat-card.new .mat-glow { background: var(--new); }
+
+  /* PROPERTY ROWS */
+  .prop-list { display: flex; flex-direction: column; gap: 8px; }
+  .prop-row { display: flex; justify-content: space-between; align-items: center; }
+  .prop-label { font-size: 0.72rem; color: var(--muted); }
+  .prop-val { font-size: 0.82rem; font-weight: 600; font-family: monospace; }
+  .prop-bar-wrap { flex: 1; margin: 0 10px; height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; }
+  .prop-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+  /* SLIDERS */
+  .slider-group { display: flex; flex-direction: column; gap: 16px; }
+  .slider-item { display: flex; flex-direction: column; gap: 6px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: center; }
+  .slider-label { font-size: 0.82rem; font-weight: 600; }
+  .slider-val { font-size: 0.82rem; font-family: monospace; font-weight: 700; }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
+  input[type=range].al { background: linear-gradient(to right, var(--al) 0%, var(--al) var(--val, 50%), rgba(255,255,255,0.1) var(--val, 50%)); }
+  input[type=range].glass { background: linear-gradient(to right, var(--glass) 0%, var(--glass) var(--val, 20%), rgba(255,255,255,0.1) var(--val, 20%)); }
+  input[type=range].ss { background: linear-gradient(to right, var(--ss) 0%, var(--ss) var(--val, 20%), rgba(255,255,255,0.1) var(--val, 20%)); }
+  input[type=range].new2 { background: linear-gradient(to right, var(--new) 0%, var(--new) var(--val, 10%), rgba(255,255,255,0.1) var(--val, 10%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+  .total-warn { font-size: 0.75rem; padding: 6px 12px; border-radius: 6px; text-align: center; font-weight: 600; }
+  .total-ok { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
+  .total-bad { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+
+  /* METRIC TILES */
+  .metric-tile { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+  .metric-tile .val { font-size: 1.5rem; font-weight: 800; font-family: monospace; }
+  .metric-tile .lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .metric-tile .unit { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* CHART CONTAINERS */
+  .chart-wrap { position: relative; width: 100%; }
+  canvas { max-width: 100%; }
+
+  /* FORM INPUTS */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .form-group input { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 0.9rem; font-family: monospace; outline: none; transition: border-color 0.2s; }
+  .form-group input:focus { border-color: var(--accent); }
+  .form-group input::placeholder { color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent2), #4f46e5); color: white; }
+  .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-success { background: linear-gradient(135deg, var(--accent3), #059669); color: white; }
+  .btn-accent { background: linear-gradient(135deg, var(--accent), #0284c7); color: #000; }
+
+  /* RADAR / SPIDER */
+  .radar-wrap { max-width: 360px; margin: 0 auto; }
+
+  /* COMPARISON TABLE */
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .compare-table th { background: rgba(255,255,255,0.05); padding: 10px 14px; text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .compare-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .compare-table .best { color: var(--success); font-weight: 700; }
+  .compare-table .worst { color: var(--danger); }
+
+  /* SOLAR EFFICIENCY METER */
+  .efficiency-ring { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ring-val { font-size: 2.8rem; font-weight: 900; font-family: monospace; }
+  .ring-lbl { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* BADGES / TAGS */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .tag-al { background: rgba(168,199,250,0.15); color: var(--al); }
+  .tag-glass { background: rgba(147,197,253,0.15); color: var(--glass); }
+  .tag-ss { background: rgba(196,181,253,0.15); color: var(--ss); }
+  .tag-new { background: rgba(110,231,183,0.15); color: var(--new); }
+
+  /* SECTION HEADERS */
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .section-header h2 { font-size: 1.1rem; font-weight: 700; }
+  .section-header .line { flex: 1; height: 1px; background: var(--border); }
+
+  /* RESULT PANEL */
+  .result-panel { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 10px; padding: 16px; }
+  .result-panel .title { font-size: 0.75rem; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+
+  .gap12 { gap: 12px; }
+  .mt16 { margin-top: 16px; }
+  .mt20 { margin-top: 20px; }
+  .mt24 { margin-top: 24px; }
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .w100 { width: 100%; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* FAMILY PICKER */
+  .fam-btn { padding:10px 18px;border-radius:8px;cursor:pointer;border:2px solid;font-size:0.85rem;font-weight:600;transition:all 0.15s; }
+  .fam-btn:hover { filter:brightness(1.2); }
+  /* ELEMENT SLIDER */
+  .elem-row { display:flex;flex-direction:column;gap:4px; }
+  .elem-header { display:flex;justify-content:space-between;align-items:center; }
+  .elem-lbl { font-size:0.8rem;font-weight:700;font-family:monospace; }
+  .elem-range-lbl { font-size:0.68rem;color:var(--muted); }
+  .elem-val-input { width:58px;background:rgba(255,255,255,0.06);border:1px solid;border-radius:6px;padding:3px 8px;font-family:monospace;font-size:0.85rem;font-weight:700;outline:none;text-align:right; }
+  .elem-slider { -webkit-appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer; }
+  .elem-slider::-webkit-slider-thumb { -webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.4); }
+  .elem-hint { font-size:0.66rem;color:var(--muted);padding-left:2px; }
+  /* CALC STEP */
+  .calc-step { padding:7px 12px;border-left:3px solid;border-radius:0 6px 6px 0;background:rgba(255,255,255,0.025); }
+  .calc-step-hdr { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px; }
+  .calc-step-expr { font-family:monospace;font-size:0.78rem;color:#e2e8f0; }
+  .calc-step-res { font-family:monospace;font-size:0.82rem;font-weight:800;margin-top:3px; }
+
+  /* OPTIMIZER STYLES */
+  .formula-box { background: rgba(0,0,0,0.35); border: 1px solid rgba(0,212,255,0.15); border-radius:8px; padding:14px 18px; font-family:monospace; font-size:0.82rem; line-height:1.9; }
+  .step-row { display:flex; align-items:flex-start; gap:10px; padding:6px 12px; border-radius:6px; border-left:3px solid; margin-bottom:4px; }
+  .step-num { font-size:0.7rem; font-weight:800; text-transform:uppercase; min-width:60px; padding-top:1px; }
+
+  @media (max-width: 900px) {
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .tabs { padding: 0 16px; }
+    .header { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <div class="header-icon">☀️</div>
+    <div>
+      <h1>Solar Panel <span>Material</span> Simulator</h1>
+      <div class="header-sub">Interactive Scientific Dashboard · Rule-of-Mixtures + Elemental Alloy Engine · v3.0</div>
+    </div>
+  </div>
+  <span class="badge">⚗️ LAB MODE</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('library',this)"><span class="tab-icon">🧱</span>Material Library</div>
+  <div class="tab" onclick="showTab('mixer',this)"><span class="tab-icon">⚗️</span>Composition Mixer</div>
+  <div class="tab" onclick="showTab('solar',this)"><span class="tab-icon">☀️</span>Solar Performance</div>
+  <div class="tab" onclick="showTab('compare',this)"><span class="tab-icon">📊</span>Comparison</div>
+  <div class="tab" onclick="showTab('newmat',this)"><span class="tab-icon">🔬</span>New Material Dev</div>
+  <div class="tab" onclick="showTab('cost',this)"><span class="tab-icon">🏭</span>Cost & Mfg (China)</div>
+  <div class="tab" onclick="showTab('optimizer',this)"><span class="tab-icon">⚙️</span>Optimizer</div>
+</div>
+
+<div class="main">
+
+<!-- ═══════════════════════════════ PANEL 1: LIBRARY ═══════════════════════════════ -->
+<div id="panel-library" class="panel active">
+  <div class="section-header">
+    <h2>Material Property Library</h2>
+    <div class="line"></div>
+    <span style="font-size:0.75rem;color:var(--muted)">Click a material for detailed view</span>
+  </div>
+  <div class="grid4" id="mat-cards-grid"></div>
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Thermal Properties Comparison</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartThermal"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Mechanical Properties</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartMech"></canvas></div>
+    </div>
+  </div>
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Optical Properties (Solar)</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartOptical"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Multi-property Radar</div>
+      <div class="radar-wrap" style="height:280px"><canvas id="chartRadar"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PANEL 2: MIXER ═══════════════════════════════ -->
+<div id="panel-mixer" class="panel">
+  <div class="section-header">
+    <h2>Elemental Composition Mixer</h2>
+    <div class="line"></div>
+    <span style="font-size:0.75rem;color:var(--muted)">Adjust element wt% → live material science calculations → predict alloy characteristics</span>
+  </div>
+
+  <!-- MATERIAL FAMILY SELECTOR -->
+  <div class="card" style="border-color:rgba(0,212,255,0.25)">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Select Material Family</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap" id="mix-family-picker">
+      <div onclick="setMixFamily('al')"   id="fam-al"    class="fam-btn fam-active" style="border-color:#a8c7fa;color:#a8c7fa;background:rgba(168,199,250,0.12)">⬡ Aluminum Alloys</div>
+      <div onclick="setMixFamily('ss')"   id="fam-ss"    class="fam-btn"            style="border-color:rgba(255,255,255,0.1);color:var(--muted)">◈ Stainless Steel</div>
+      <div onclick="setMixFamily('glass')"id="fam-glass" class="fam-btn"            style="border-color:rgba(255,255,255,0.1);color:var(--muted)">◇ Glass Composition</div>
+    </div>
+    <div id="mix-family-desc" style="margin-top:10px;font-size:0.76rem;color:var(--muted);line-height:1.6"></div>
+  </div>
+
+  <!-- PRESET GRADES -->
+  <div class="mt20 card">
+    <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Load a Standard Grade / Preset</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px" id="mix-presets"></div>
+  </div>
+
+  <!-- ELEMENTAL SLIDERS + CALCULATION STEPS -->
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Elemental Composition (wt %)</div>
+      <div id="mix-elem-sliders" style="display:flex;flex-direction:column;gap:12px"></div>
+      <div id="mix-balance-row" style="margin-top:14px;padding:10px 14px;border-radius:8px;font-family:monospace;font-size:0.82rem"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Step-by-Step Material Science Calculation</div>
+      <div id="mix-calc-steps" style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- PROPERTIES OUTPUT -->
+  <div class="mt20 card">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Predicted Alloy Characteristics</div>
+    <!-- Grade match badge -->
+    <div id="mix-grade-match" style="margin-bottom:16px"></div>
+    <div id="mix-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Composition Pie</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartPie"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Property Radar — vs. Standard Grades</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartMixLine"></canvas></div>
+    </div>
+  </div>
+
+  <!-- MIXING RULE ANALYSIS -->
+  <div class="mt20 card">
+    <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Strengthening Mechanism Analysis</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="mix-rule-cards"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PANEL 3: SOLAR ═══════════════════════════════ -->
+<div id="panel-solar" class="panel">
+  <div class="section-header">
+    <h2>Solar Panel Performance Analysis</h2>
+    <div class="line"></div>
+    <span style="font-size:0.75rem;color:var(--muted)">Material impact on energy yield</span>
+  </div>
+  <div class="grid4" id="solar-kpis"></div>
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Thermal Loss vs. Temperature (by Material)</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="chartTempLoss"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Annual Energy Yield Estimate</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="chartYield"></canvas></div>
+    </div>
+  </div>
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Absorptivity Spectrum Response</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartSpectrum"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>20-Year Degradation Model</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartDegrade"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PANEL 4: COMPARE ═══════════════════════════════ -->
+<div id="panel-compare" class="panel">
+  <div class="section-header">
+    <h2>Material Comparison Matrix</h2>
+    <div class="line"></div>
+  </div>
+  <div class="card">
+    <table class="compare-table" id="compare-table"></table>
+  </div>
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Cost vs. Performance Index</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="chartScatter"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Suitability Score (Solar Applications)</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="chartSuitability"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PANEL 5: NEW MATERIAL ═══════════════════════════════ -->
+<div id="panel-newmat" class="panel">
+  <div class="section-header">
+    <h2>New Material Development</h2>
+    <div class="line"></div>
+    <span style="font-size:0.75rem;color:var(--muted)">Design custom materials and simulate performance</span>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--new)"></span>Material Properties Input</div>
+      <div class="form-grid" id="new-mat-form">
+        <div class="form-group">
+          <label>Material Name</label>
+          <input type="text" id="nm-name" placeholder="e.g. TiO₂ Nanocomposite" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>Density (kg/m³)</label>
+          <input type="number" id="nm-density" placeholder="e.g. 4200" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>Young's Modulus (GPa)</label>
+          <input type="number" id="nm-modulus" placeholder="e.g. 120" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>Thermal Conductivity (W/m·K)</label>
+          <input type="number" id="nm-therm" placeholder="e.g. 8.5" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>CTE (×10⁻⁶/°C)</label>
+          <input type="number" id="nm-cte" placeholder="e.g. 9.0" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>Solar Absorptance (0–1)</label>
+          <input type="number" id="nm-abs" placeholder="e.g. 0.95" step="0.01" min="0" max="1" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>Tensile Strength (MPa)</label>
+          <input type="number" id="nm-tensile" placeholder="e.g. 800" oninput="calcNewMat()">
+        </div>
+        <div class="form-group">
+          <label>Cost Index (1–10)</label>
+          <input type="number" id="nm-cost" placeholder="e.g. 7" min="1" max="10" oninput="calcNewMat()">
+        </div>
+      </div>
+      <div class="mt16" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-success" onclick="addCustomMaterial()">➕ Add to Library</button>
+        <button class="btn btn-accent" onclick="calcNewMat()">🔄 Simulate</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Predicted Performance</div>
+      <div id="nm-results">
+        <div style="color:var(--muted);text-align:center;padding:40px;font-size:0.85rem">Enter material properties to see predictions →</div>
+      </div>
+    </div>
+  </div>
+  <div class="mt20 card">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Custom Materials Library</div>
+    <div id="custom-mat-list">
+      <div style="color:var(--muted);font-size:0.82rem;padding:12px">No custom materials added yet. Use the form above to create one.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PANEL 6: COST & MFG (CHINA) ═══════════════════════════════ -->
+<div id="panel-cost" class="panel">
+  <div class="section-header">
+    <h2>Cost &amp; Manufacturing Analysis — China</h2>
+    <div class="line"></div>
+    <span style="font-size:0.75rem;color:var(--muted)">2024–2025 market data · CNY &amp; USD · Per kg &amp; per m²</span>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="grid4" id="cost-kpis"></div>
+
+  <div class="mt20 grid2">
+    <!-- Material cost cards -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Unit Cost Breakdown (China Domestic Market)</div>
+      <div id="cost-cards" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- Cost bar chart -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Cost per kg — CNY vs USD</div>
+      <div class="chart-wrap" style="height:320px"><canvas id="chartCostBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Manufacturing Cost Breakdown (per m² panel)</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="chartMfgStack"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Cost vs. Performance Value Map</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="chartCostPerf"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Interactive cost calculator -->
+  <div class="mt20 card">
+    <div class="card-title"><span class="dot" style="background:var(--new)"></span>🧮 Panel Cost Calculator — China Fabrication</div>
+    <div class="grid3" style="gap:16px;margin-bottom:16px">
+      <div class="form-group">
+        <label>Panel Area (m²)</label>
+        <input type="number" id="calc-area" value="1.96" step="0.1" oninput="calcPanelCost()">
+      </div>
+      <div class="form-group">
+        <label>Quantity (panels)</label>
+        <input type="number" id="calc-qty" value="1000" oninput="calcPanelCost()">
+      </div>
+      <div class="form-group">
+        <label>Frame Alloy</label>
+        <select id="calc-frame" onchange="calcPanelCost()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:0.9rem;outline:none">
+          <option value="al">Aluminum 6061</option>
+          <option value="ss">Stainless Steel 316L</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid4" id="calc-results"></div>
+  </div>
+
+  <!-- Supply chain table -->
+  <div class="mt20 card">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>China Supply Chain &amp; Manufacturing Hub Reference</div>
+    <table class="compare-table" id="supply-table"></table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PANEL 7: OPTIMIZER ═══════════════════════════════ -->
+<div id="panel-optimizer" class="panel">
+  <div class="section-header">
+    <h2>⚙️ Optimal Ratio Finder</h2>
+    <div class="line"></div>
+    <span style="font-size:0.75rem;color:var(--muted)">Grid-search over 4-component space · Full formula derivation</span>
+  </div>
+
+  <!-- FORMULA DERIVATION PANEL -->
+  <div class="card" style="border-color:rgba(0,212,255,0.3)">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Mathematical Framework — Mixing & Objective Functions</div>
+    <div id="formula-display" style="font-family:monospace;line-height:2;font-size:0.82rem"></div>
+  </div>
+
+  <!-- OBJECTIVE + CONSTRAINTS -->
+  <div class="mt20 grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Optimization Objective</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group">
+          <label>Select Objective Function</label>
+          <select id="opt-objective" onchange="updateObjectiveDescription()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:0.88rem;outline:none">
+            <option value="solar">☀️ Maximize Solar Efficiency Index</option>
+            <option value="cost">💴 Minimize Manufacturing Cost (China)</option>
+            <option value="strength">🔩 Maximize Specific Strength (σ/ρ)</option>
+            <option value="thermal">🌡 Maximize Thermal Management Score</option>
+            <option value="balanced">⚖️ Multi-Objective: Balanced Solar Panel</option>
+            <option value="lightweight">🪶 Lightweight High-Absorptance</option>
+            <option value="marine">🌊 Marine-Grade Durability + Solar</option>
+          </select>
+        </div>
+        <div id="obj-description" class="result-panel"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Constraints</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="form-group">
+          <label>Max Density (kg/m³) — 0 = unconstrained</label>
+          <input type="number" id="con-density" value="4000" oninput="liveOptimize()">
+        </div>
+        <div class="form-group">
+          <label>Min Tensile Strength (MPa)</label>
+          <input type="number" id="con-tensile" value="100" oninput="liveOptimize()">
+        </div>
+        <div class="form-group">
+          <label>Max Cost Index (¥/m²)</label>
+          <input type="number" id="con-cost" value="200" oninput="liveOptimize()">
+        </div>
+        <div class="form-group">
+          <label>Min Absorptance (0–1)</label>
+          <input type="number" id="con-abs" value="0.10" step="0.05" min="0" max="1" oninput="liveOptimize()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUN BUTTON -->
+  <div class="mt20" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="runOptimizer()" style="font-size:0.95rem;padding:12px 28px">⚙️ Find Optimal Compound</button>
+    <button class="btn btn-accent" onclick="runPareto()" style="font-size:0.95rem;padding:12px 28px">📈 Generate Pareto Front</button>
+    <span id="opt-status" style="font-size:0.78rem;color:var(--muted)"></span>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="mt20" id="opt-results-section" style="display:none">
+    <!-- Optimal compound badge -->
+    <div class="card" style="border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.04)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="font-size:2rem">🏆</div>
+        <div>
+          <div style="font-size:0.75rem;color:var(--success);font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Optimal Compound Found</div>
+          <div id="opt-compound-name" style="font-size:1.3rem;font-weight:800;font-family:monospace;color:#6ee7b7"></div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div id="opt-score-val" style="font-size:2.5rem;font-weight:900;font-family:monospace;color:#6ee7b7"></div>
+          <div style="font-size:0.72rem;color:var(--muted)">Objective Score</div>
+        </div>
+      </div>
+      <!-- Ratio bars -->
+      <div id="opt-ratio-bars" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <!-- Step-by-step calculation -->
+    <div class="mt20 card" style="border-color:rgba(0,212,255,0.2)">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Step-by-Step Calculation — Showing Your Work</div>
+      <div id="opt-steps" style="font-family:monospace;font-size:0.82rem;line-height:2;display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+
+    <!-- Result property tiles -->
+    <div class="mt20 grid4" id="opt-prop-tiles"></div>
+
+    <!-- Charts -->
+    <div class="mt20 grid2">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Objective Score vs. Al% (Glass+SS balanced)</div>
+        <div class="chart-wrap" style="height:260px"><canvas id="chartOptLine"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Pareto Front: Cost vs. Solar Performance</div>
+        <div class="chart-wrap" style="height:260px"><canvas id="chartPareto"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Top-5 compounds table -->
+    <div class="mt20 card">
+      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Top 10 Candidate Compounds (Ranked)</div>
+      <div style="overflow-x:auto"><table class="compare-table" id="opt-top-table"></table></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .main -->
+
+<script>
+// ══════════════════════════════════════════════════
+//  MATERIAL DATABASE
+// ══════════════════════════════════════════════════
+const MATERIALS = {
+  al: {
+    id:'al', name:'Aluminum 6061', formula:'Al-Mg-Si',
+    density:2700, modulus:69, thermalK:167, cte:23.6,
+    absorptance:0.15, reflectance:0.85, emittance:0.05,
+    tensile:310, yield:276, hardness:95, resistivity:2.8e-8,
+    costIndex:3, corrosion:7, weight:8,
+    color:'#a8c7fa', tag:'al',
+    desc:'Lightweight structural alloy used for frames, mounting systems. Excellent thermal dissipation.',
+    solarRole:'Frame / Heat Sink'
+  },
+  glass: {
+    id:'glass', name:'Borosilicate Glass', formula:'SiO₂-B₂O₃',
+    density:2230, modulus:64, thermalK:1.13, cte:3.3,
+    absorptance:0.04, reflectance:0.04, emittance:0.84,
+    tensile:50, yield:50, hardness:480, resistivity:1e10,
+    costIndex:2, corrosion:9, weight:6,
+    color:'#93c5fd', tag:'glass',
+    desc:'Ultra-low-iron tempered glass for cover. Highest transmittance (96%+) for solar spectrum.',
+    solarRole:'Cover / Encapsulant'
+  },
+  ss: {
+    id:'ss', name:'Stainless Steel 316L', formula:'Fe-Cr-Ni-Mo',
+    density:7990, modulus:193, thermalK:16.3, cte:16.0,
+    absorptance:0.40, reflectance:0.60, emittance:0.12,
+    tensile:485, yield:170, hardness:217, resistivity:7.4e-7,
+    costIndex:5, corrosion:8, weight:3,
+    color:'#c4b5fd', tag:'ss',
+    desc:'Corrosion-resistant steel for marine/industrial environments. Used in mounting hardware.',
+    solarRole:'Hardware / Substrate'
+  },
+  new: {
+    id:'new', name:'Perovskite Hybrid*', formula:'CH₃NH₃PbI₃',
+    density:4160, modulus:14, thermalK:0.5, cte:84,
+    absorptance:0.92, reflectance:0.05, emittance:0.40,
+    tensile:5, yield:3, hardness:20, resistivity:1e4,
+    costIndex:8, corrosion:3, weight:9,
+    color:'#6ee7b7', tag:'new',
+    desc:'Next-gen perovskite absorber layer. Exceptional light absorption but stability challenges.',
+    solarRole:'Active Absorber Layer'
+  }
+};
+
+let customMaterials = [];
+
+// Normalize properties for radar (0-10 scale)
+function normProp(val, min, max) {
+  return Math.min(10, Math.max(0, (val - min) / (max - min) * 10));
+}
+
+// ══════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════════════════════
+function showTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 1: LIBRARY — MATERIAL CARDS
+// ══════════════════════════════════════════════════
+function buildMaterialCards() {
+  const grid = document.getElementById('mat-cards-grid');
+  grid.innerHTML = '';
+  Object.values(MATERIALS).forEach(m => {
+    const props = [
+      { label:'Density', val: m.density+' kg/m³', norm: normProp(m.density,2000,8000)/10 },
+      { label:'Young\'s Mod.', val: m.modulus+' GPa', norm: normProp(m.modulus,0,200)/10 },
+      { label:'Thermal K', val: m.thermalK+' W/m·K', norm: normProp(m.thermalK,0,180)/10 },
+      { label:'CTE', val: m.cte+'×10⁻⁶/°C', norm: normProp(m.cte,0,90)/10 },
+      { label:'Absorptance', val: (m.absorptance*100).toFixed(0)+'%', norm: m.absorptance },
+      { label:'Tensile Str.', val: m.tensile+' MPa', norm: normProp(m.tensile,0,600)/10 },
+    ];
+    const rows = props.map(p => `
+      <div class="prop-row">
+        <span class="prop-label">${p.label}</span>
+        <div class="prop-bar-wrap"><div class="prop-bar" style="width:${p.norm*100}%;background:${m.color}66"></div></div>
+        <span class="prop-val" style="color:${m.color}">${p.val}</span>
+      </div>`).join('');
+    grid.innerHTML += `
+      <div class="mat-card ${m.tag}" onclick="highlightMat('${m.id}')">
+        <div class="mat-glow"></div>
+        <span class="tag tag-${m.tag}">${m.solarRole}</span>
+        <div class="mat-name" style="color:${m.color};margin-top:10px">${m.name}</div>
+        <div class="mat-formula">${m.formula}</div>
+        <div class="prop-list">${rows}</div>
+        <div style="margin-top:12px;font-size:0.7rem;color:var(--muted);line-height:1.5">${m.desc}</div>
+      </div>`;
+  });
+}
+
+function highlightMat(id) { /* visual feedback placeholder */ }
+
+// ══════════════════════════════════════════════════
+//  CHARTS — LIBRARY
+// ══════════════════════════════════════════════════
+let charts = {};
+
+const MAT_LABELS = ['Aluminum 6061','Borosilicate Glass','SS 316L','Perovskite*'];
+const MAT_COLORS = ['#a8c7fa','#93c5fd','#c4b5fd','#6ee7b7'];
+const MAT_COLORS_BG = ['rgba(168,199,250,0.2)','rgba(147,197,253,0.2)','rgba(196,181,253,0.2)','rgba(110,231,183,0.2)'];
+
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color:'#94a3b8', font:{size:11} } } },
+  scales: {
+    x: { ticks:{ color:'#64748b' }, grid:{ color:'rgba(255,255,255,0.05)' } },
+    y: { ticks:{ color:'#64748b' }, grid:{ color:'rgba(255,255,255,0.05)' } }
+  }
+};
+
+function initCharts() {
+  // Thermal
+  charts.thermal = new Chart(document.getElementById('chartThermal'), {
+    type:'bar',
+    data:{
+      labels:MAT_LABELS,
+      datasets:[
+        { label:'Thermal Conductivity (W/m·K)', data:[167,1.13,16.3,0.5], backgroundColor:MAT_COLORS_BG, borderColor:MAT_COLORS, borderWidth:2 },
+      ]
+    },
+    options:{...chartDefaults, plugins:{...chartDefaults.plugins, title:{display:false}}}
+  });
+
+  // Mechanical
+  charts.mech = new Chart(document.getElementById('chartMech'), {
+    type:'bar',
+    data:{
+      labels:MAT_LABELS,
+      datasets:[
+        { label:'Tensile Strength (MPa)', data:[310,50,485,5], backgroundColor:MAT_COLORS_BG, borderColor:MAT_COLORS, borderWidth:2 },
+        { label:'Young\'s Modulus (GPa)', data:[69,64,193,14], backgroundColor:MAT_COLORS_BG.map(c=>c.replace('0.2','0.12')), borderColor:MAT_COLORS, borderWidth:2, type:'line', yAxisID:'y1' }
+      ]
+    },
+    options:{
+      ...chartDefaults, responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{ ticks:{color:'#64748b'}, grid:{color:'rgba(255,255,255,0.05)'} },
+        y:{ ticks:{color:'#64748b'}, grid:{color:'rgba(255,255,255,0.05)'}, title:{display:true,text:'MPa',color:'#64748b',font:{size:10}} },
+        y1:{ type:'linear', position:'right', ticks:{color:'#64748b'}, grid:{display:false}, title:{display:true,text:'GPa',color:'#64748b',font:{size:10}} }
+      },
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:11}}} }
+    }
+  });
+
+  // Optical
+  charts.optical = new Chart(document.getElementById('chartOptical'), {
+    type:'bar',
+    data:{
+      labels:MAT_LABELS,
+      datasets:[
+        { label:'Absorptance', data:[0.15,0.04,0.40,0.92], backgroundColor:MAT_COLORS_BG, borderColor:MAT_COLORS, borderWidth:2 },
+        { label:'Reflectance', data:[0.85,0.04,0.60,0.05], backgroundColor:['rgba(168,199,250,0.1)','rgba(147,197,253,0.1)','rgba(196,181,253,0.1)','rgba(110,231,183,0.1)'], borderColor:MAT_COLORS, borderWidth:1, borderDash:[4,4] }
+      ]
+    },
+    options:{ ...chartDefaults, scales:{ x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{min:0,max:1,ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}} } }
+  });
+
+  // Radar
+  charts.radar = new Chart(document.getElementById('chartRadar'), {
+    type:'radar',
+    data:{
+      labels:['Thermal Cond.','Strength','Light Absorb.','Corrosion Res.','Lightness','Low Cost'],
+      datasets: Object.values(MATERIALS).map(m => ({
+        label: m.name,
+        data:[
+          normProp(m.thermalK,0,180),
+          normProp(m.tensile,0,600),
+          m.absorptance*10,
+          m.corrosion,
+          m.weight,
+          (11-m.costIndex)
+        ],
+        borderColor: m.color, backgroundColor: m.color+'22', pointBackgroundColor:m.color, borderWidth:2
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{ r:{ min:0, max:10, ticks:{color:'#64748b',backdropColor:'transparent',font:{size:9}}, grid:{color:'rgba(255,255,255,0.08)'}, pointLabels:{color:'#94a3b8',font:{size:10}} } },
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}} }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 2: ELEMENTAL COMPOSITION MIXER
+//  Material science engine: Al alloys / SS / Glass
+// ══════════════════════════════════════════════════
+
+let mixFamily = 'al';   // 'al' | 'ss' | 'glass'
+let mixElem = {};       // current element wt% values
+let mixPieChart = null, mixLineChart = null;
+
+// ── MATERIAL FAMILY DEFINITIONS ──────────────────
+const MIX_FAMILIES = {
+  al: {
+    label:'Aluminum Alloys', color:'#a8c7fa', base:'Al',
+    desc:'Adjust alloying elements in wt%. Balance is Aluminum (Al). Covers 1xxx–7xxx series alloys. Key strengthening: solid-solution hardening (Mg, Cu), precipitation hardening (Mg+Si in 6xxx, Cu in 2xxx, Zn+Mg in 7xxx), grain boundary Hall-Petch.',
+    elements: [
+      { id:'Si', name:'Silicon (Si)',   min:0, max:12.6, def:0.6,  color:'#94a3b8', hint:'6xxx series (Mg+Si precipitates, β″ → β → Mg₂Si). Increases hardness & wear resistance.' },
+      { id:'Cu', name:'Copper (Cu)',    min:0, max:6.2,  def:0.28, color:'#f59e0b', hint:'2xxx series (θ″ → θ → CuAl₂). Strongest hardener. Reduces corrosion resistance.' },
+      { id:'Mg', name:'Magnesium (Mg)',min:0, max:5.1,  def:1.0,  color:'#6ee7b7', hint:'Solid solution + 5xxx/6xxx. Improves corrosion resistance in seawater.' },
+      { id:'Mn', name:'Manganese (Mn)',min:0, max:1.5,  def:0.15, color:'#a78bfa', hint:'3xxx series. Grain refiner. Forms Al₆Mn dispersoids.' },
+      { id:'Zn', name:'Zinc (Zn)',      min:0, max:8.2,  def:0.25, color:'#fbbf24', hint:'7xxx series (η′ → η → MgZn₂). Highest strength alloys. Stress-corrosion risk.' },
+      { id:'Cr', name:'Chromium (Cr)', min:0, max:0.35, def:0.2,  color:'#f472b6', hint:'Dispersoid former. Prevents recrystallisation. Retains strength at elevated temp.' },
+      { id:'Ti', name:'Titanium (Ti)', min:0, max:0.20, def:0.06, color:'#34d399', hint:'Grain refiner (TiB₂ nucleant). Trace addition in most wrought alloys.' },
+      { id:'Fe', name:'Iron (Fe)',      min:0, max:0.70, def:0.35, color:'#ef4444', hint:'Impurity. Forms AlFeSi needles — reduces ductility. Kept ≤0.5% in high-purity alloys.' },
+    ],
+    presets: [
+      { name:'1100 (CP)',   vals:{ Si:0.12, Cu:0.12, Mg:0,   Mn:0,   Zn:0.1,  Cr:0,   Ti:0,   Fe:0.50 } },
+      { name:'2024-T3',     vals:{ Si:0.50, Cu:4.4,  Mg:1.5, Mn:0.6, Zn:0.25, Cr:0.1, Ti:0.15,Fe:0.50 } },
+      { name:'3003',        vals:{ Si:0.30, Cu:0.12, Mg:0,   Mn:1.2, Zn:0.10, Cr:0,   Ti:0,   Fe:0.70 } },
+      { name:'5052',        vals:{ Si:0.25, Cu:0.10, Mg:2.5, Mn:0.10,Zn:0.10, Cr:0.25,Ti:0,   Fe:0.40 } },
+      { name:'6061-T6',     vals:{ Si:0.60, Cu:0.28, Mg:1.0, Mn:0.15,Zn:0.25, Cr:0.20,Ti:0.06,Fe:0.35 } },
+      { name:'6063-T5',     vals:{ Si:0.45, Cu:0.10, Mg:0.7, Mn:0.10,Zn:0.10, Cr:0.10,Ti:0.10,Fe:0.35 } },
+      { name:'7075-T6',     vals:{ Si:0.40, Cu:1.6,  Mg:2.5, Mn:0.30,Zn:5.6,  Cr:0.23,Ti:0.10,Fe:0.50 } },
+    ]
+  },
+  ss: {
+    label:'Stainless Steel', color:'#c4b5fd', base:'Fe',
+    desc:'Adjust major alloying elements (wt%). Balance is Iron (Fe). Key metric: PREN (Pitting Resistance Equivalent). Schaeffler diagram determines microstructure — austenite, ferrite, martensite, or duplex.',
+    elements: [
+      { id:'Cr', name:'Chromium (Cr)',  min:10, max:30,  def:18,   color:'#a8c7fa', hint:'Passivating element. ≥10.5% forms Cr₂O₃ passive film. Primary corrosion barrier.' },
+      { id:'Ni', name:'Nickel (Ni)',    min:0,  max:22,  def:8,    color:'#6ee7b7', hint:'Austenite stabiliser. Improves toughness, formability & HT performance.' },
+      { id:'Mo', name:'Molybdenum (Mo)',min:0,  max:7,   def:0,    color:'#f59e0b', hint:'Pitting resistance +3.3× per wt% (PREN). Key in 316, duplex grades.' },
+      { id:'C',  name:'Carbon (C)',     min:0,  max:0.12,def:0.07, color:'#ef4444', hint:'"L" grades use C<0.03% to prevent sensitisation (Cr₂₃C₆ at grain boundaries).' },
+      { id:'Mn', name:'Manganese (Mn)', min:0,  max:2,   def:1.0,  color:'#a78bfa', hint:'Austenite stabiliser (partial Ni substitute). Improves hot workability.' },
+      { id:'Si', name:'Silicon (Si)',   min:0,  max:1,   def:0.5,  color:'#94a3b8', hint:'Ferrite stabiliser. Improves oxidation resistance. Increases strength slightly.' },
+      { id:'N',  name:'Nitrogen (N)',   min:0,  max:0.30,def:0.04, color:'#34d399', hint:'PREN +16× per wt%. Austenite stabiliser. Key in duplex 2205, super-austenitic.' },
+    ],
+    presets: [
+      { name:'304',    vals:{ Cr:18,  Ni:8,   Mo:0,  C:0.07, Mn:1.0, Si:0.5, N:0.04 } },
+      { name:'304L',   vals:{ Cr:18.5,Ni:9,   Mo:0,  C:0.02, Mn:1.0, Si:0.5, N:0.04 } },
+      { name:'316',    vals:{ Cr:17,  Ni:11,  Mo:2.1,C:0.07, Mn:1.2, Si:0.4, N:0.05 } },
+      { name:'316L',   vals:{ Cr:17,  Ni:11,  Mo:2.1,C:0.02, Mn:1.2, Si:0.4, N:0.06 } },
+      { name:'430',    vals:{ Cr:17,  Ni:0.5, Mo:0,  C:0.08, Mn:0.8, Si:0.5, N:0.03 } },
+      { name:'2205',   vals:{ Cr:22,  Ni:5.5, Mo:3.0,C:0.02, Mn:1.5, Si:0.4, N:0.17 } },
+      { name:'904L',   vals:{ Cr:20,  Ni:25,  Mo:4.5,C:0.02, Mn:1.5, Si:0.5, N:0.06 } },
+    ]
+  },
+  glass: {
+    label:'Glass Composition', color:'#93c5fd', base:'Balance (SiO₂)',
+    desc:'Adjust oxide wt%. SiO₂ is balance. Critical for solar: Fe₂O₃ absorbs UV/visible light — keep <0.015% for high-transmittance solar glass. B₂O₃ lowers CTE (borosilicate). Na₂O + CaO = soda-lime glass.',
+    elements: [
+      { id:'Na2O',  name:'Na₂O (Soda)',    min:0, max:20,  def:13,  color:'#f59e0b', hint:'Flux. Lowers melting point. Reduces CTE. Common in soda-lime window glass.' },
+      { id:'CaO',   name:'CaO (Lime)',     min:0, max:15,  def:10,  color:'#a8c7fa', hint:'Network modifier. Improves chemical durability. Standard in soda-lime glass.' },
+      { id:'B2O3',  name:'B₂O₃ (Boric)',  min:0, max:20,  def:0,   color:'#6ee7b7', hint:'Low CTE (3.3 vs 9 ×10⁻⁶/°C). Borosilicate. Better thermal shock resistance.' },
+      { id:'Al2O3', name:'Al₂O₃ (Alumina)',min:0,max:8,   def:1.5, color:'#c4b5fd', hint:'Strengthens network. Improves chemical resistance & scratch resistance.' },
+      { id:'MgO',   name:'MgO (Magnesia)', min:0, max:8,   def:3.5, color:'#34d399', hint:'Reduces crystallisation tendency. Replaces CaO for better viscosity control.' },
+      { id:'K2O',   name:'K₂O (Potash)',  min:0, max:8,   def:0,   color:'#fb923c', hint:'Flux, like Na₂O. Improves gloss, RI, and electrical resistivity.' },
+      { id:'Fe2O3', name:'Fe₂O₃ (Iron)',  min:0, max:1,   def:0.1, color:'#ef4444', hint:'⚠ SOLAR KEY: absorbs blue/green light. <0.015% needed for ≥91.5% transmittance.' },
+      { id:'TiO2',  name:'TiO₂ (Titania)',min:0, max:5,   def:0,   color:'#fbbf24', hint:'Opacifier & UV absorber. High RI coating applications.' },
+    ],
+    presets: [
+      { name:'Soda-Lime',     vals:{ Na2O:13.5,CaO:10, B2O3:0,  Al2O3:1.5,MgO:3.5,K2O:0,  Fe2O3:0.12,TiO2:0 } },
+      { name:'Borosilicate',  vals:{ Na2O:4,   CaO:0,  B2O3:13, Al2O3:2.5,MgO:0,  K2O:0,  Fe2O3:0.02,TiO2:0 } },
+      { name:'Solar (Low Fe)',vals:{ Na2O:13.5,CaO:10, B2O3:0,  Al2O3:1.5,MgO:3.5,K2O:0,  Fe2O3:0.01,TiO2:0 } },
+      { name:'Float Glass',   vals:{ Na2O:14,  CaO:9,  B2O3:0,  Al2O3:1,  MgO:4,  K2O:1,  Fe2O3:0.09,TiO2:0 } },
+      { name:'Aluminosilicate',vals:{ Na2O:3,  CaO:5,  B2O3:0,  Al2O3:7,  MgO:2,  K2O:0.5,Fe2O3:0.03,TiO2:0 } },
+      { name:'AR Solar Coat', vals:{ Na2O:14,  CaO:10, B2O3:0,  Al2O3:2,  MgO:3,  K2O:0,  Fe2O3:0.008,TiO2:0.1 } },
+    ]
+  }
+};
+
+// ── PROPERTY CALCULATION ENGINES ─────────────────
+function calcAl(e) {
+  // Density — Vegard-type (atomic weight substitution)
+  const density = 2700 + 11.2*(e.Cu||0) - 2.2*(e.Mg||0) + 0.5*(e.Si||0)
+                + 0.3*(e.Mn||0) + 5.8*(e.Zn||0) - 1.5*(e.Cr||0) + 3.2*(e.Fe||0);
+  // Young's modulus (insensitive, slight Si effect)
+  const modulus = 69 + 0.08*(e.Si||0) + 0.05*(e.Cu||0);
+  // Electrical conductivity % IACS
+  const iacs = Math.max(1, 61 - 1.6*(e.Cu||0) - 4.5*(e.Mg||0) - 1.0*(e.Si||0)
+                         - 4.0*(e.Mn||0) - 0.8*(e.Zn||0) - 1.5*(e.Cr||0));
+  // Thermal conductivity (Wiedemann-Franz approx)
+  const thermalK = 160 * (iacs/61);
+  // Yield strength: base + solid solution + precipitation
+  const ss_Mg = 25*(e.Mg||0);
+  const ss_Cu = 30*(e.Cu||0);
+  const ss_Zn = 18*(e.Zn||0);
+  const ss_Si = 8*(e.Si||0);
+  const precip_6xxx = ((e.Mg||0)>0.5 && (e.Si||0)>0.3) ? 70 + 60*(e.Mg||0)*(e.Si||0)/((e.Mg||0)+(e.Si||0)) : 0;
+  const precip_2xxx = (e.Cu||0)>1 ? 80*(e.Cu||0) : 0;
+  const precip_7xxx = ((e.Zn||0)>2 && (e.Mg||0)>1) ? 100 + 40*(e.Zn||0) : 0;
+  const yieldStr = 40 + ss_Mg + ss_Cu + ss_Zn + ss_Si + precip_6xxx + precip_2xxx + precip_7xxx;
+  const tensile = yieldStr * (1.4 - 0.05*((e.Cu||0)+(e.Mg||0)));
+  const hardness = tensile * 0.3;
+  // Corrosion resistance (1–10)
+  const corr = Math.max(1, Math.min(10, 8 - 2.5*(e.Cu||0) + 0.5*(e.Mg||0) - 0.5*(e.Zn||0) + 0.3*(e.Si||0)));
+  // Elongation
+  const elong = Math.max(1, 25 - 2*(e.Cu||0) - 1.5*(e.Zn||0) + 1*(e.Mg||0) - 3*(e.Si||0));
+  return { density, modulus, thermalK, iacs, yieldStr, tensile, hardness, corr, elong,
+           precip: precip_6xxx>0?'Mg₂Si (β″)':precip_2xxx>0?'CuAl₂ (θ″)':precip_7xxx>0?'MgZn₂ (η′)':'Solid solution only' };
+}
+
+function calcSS(e) {
+  // PREN = %Cr + 3.3×%Mo + 16×%N
+  const PREN = (e.Cr||0) + 3.3*(e.Mo||0) + 16*(e.N||0);
+  // Cr equivalent (ferrite/martensite stabilisers)
+  const Creq = (e.Cr||0) + (e.Mo||0) + 1.5*(e.Si||0) + 0.5*0; // Nb=0
+  // Ni equivalent (austenite stabilisers)
+  const Nieq = (e.Ni||0) + 30*(e.C||0) + 0.5*(e.Mn||0) + 30*(e.N||0);
+  // Microstructure from Schaeffler
+  let micro = 'Austenitic';
+  if (Creq > 20 && Nieq < 6)  micro = 'Ferritic';
+  else if (Creq > 12 && Nieq < 4) micro = 'Martensitic';
+  else if (Creq/Nieq > 2.5 && Nieq > 4) micro = 'Duplex (A+F)';
+  // Density
+  const density = 7874 + 17*(e.Cr||0) - 21*(e.Ni||0) + 34*(e.Mo||0) - 20*(e.C||0)*10;
+  // Thermal conductivity
+  const thermalK = 15 - 0.05*(e.Ni||0) + 0.1*(e.Mo||0) + 0.05*(e.Si||0);
+  // UTS
+  const tensile = 480 + 10*(e.Cr||0) + 8*(e.Ni||0) + 25*(e.Mo||0) + 1500*(e.C||0) + 30*(e.Mn||0) + 40*(e.N||0);
+  const yieldStr = tensile * 0.45;
+  const hardness = tensile * 0.28;
+  // Modulus (austenitic vs ferritic)
+  const modulus = micro.includes('Ferrit') || micro.includes('Martin') ? 210 : 193;
+  // Corrosion: PREN-based score (PREN>40 = super-austenitic, >32 = 316L, >18 = 304)
+  const corr = Math.min(10, 2 + PREN/8);
+  const magnetic = micro.includes('Ferrit') || micro.includes('Martin') ? 'Yes' : 'No (paramagnetic)';
+  return { PREN, Creq, Nieq, micro, density, thermalK, tensile, yieldStr, hardness, modulus, corr, magnetic };
+}
+
+function calcGlass(e) {
+  const SiO2 = Math.max(0, 100 - Object.values(e).reduce((s,v)=>s+(v||0),0));
+  // Density — additive molar volumes
+  const density = ( SiO2*2.20 + (e.Na2O||0)*2.27 + (e.CaO||0)*3.35 + (e.B2O3||0)*1.84
+                  + (e.Al2O3||0)*3.99 + (e.MgO||0)*3.58 + (e.K2O||0)*2.32
+                  + (e.Fe2O3||0)*5.24 + (e.TiO2||0)*4.23 ) / 100 * 1000;
+  // CTE — oxide factor model ×10⁻⁷/°C
+  const cte = ( SiO2*(-0.1) + (e.Na2O||0)*33 + (e.CaO||0)*13 + (e.B2O3||0)*(-3)
+              + (e.Al2O3||0)*6 + (e.MgO||0)*6 + (e.K2O||0)*28
+              + (e.Fe2O3||0)*12 + (e.TiO2||0)*(-0.5) ) / 100;  // ×10⁻⁶/°C
+  // Transmittance at 550nm (Beer-Lambert simplified — Fe₂O₃ absorbs strongly)
+  const fe2o3 = e.Fe2O3||0;
+  const transmit550 = Math.max(0, (0.974 - 2.8*fe2o3) * 100); // % for 3.2mm
+  // Solar weighted transmittance
+  const solarTransmit = Math.max(0, (0.965 - 3.5*fe2o3) * 100);
+  // Refractive index
+  const ri = 1.458 + 0.005*(e.Na2O||0)/14 + 0.008*(e.TiO2||0) - 0.004*(e.B2O3||0)/13;
+  // Softening temperature (approx, °C)
+  const softT = 1450*(SiO2/100) + 600*(e.Al2O3||0)/100 - 80*(e.Na2O||0)/100 + 200*(e.B2O3||0)/100 + 800*(e.MgO||0)/100 + 200*(e.CaO||0)/100;
+  // Young's modulus
+  const modulus = 63 + 0.3*(e.Al2O3||0) + 0.2*(e.MgO||0) - 0.1*(e.Na2O||0);
+  // Thermal conductivity
+  const thermalK = 1.0 + 0.01*(e.Na2O||0) + 0.005*(e.Al2O3||0);
+  // Glass type classification
+  let glassType = 'Unknown';
+  if (SiO2 > 79 && (e.B2O3||0) > 10) glassType = 'Borosilicate (Pyrex-type)';
+  else if (SiO2 > 70 && (e.Na2O||0) > 10 && fe2o3 < 0.02) glassType = 'Low-Iron Solar Glass';
+  else if (SiO2 > 70 && (e.Na2O||0) > 10) glassType = 'Soda-Lime Silica';
+  else if ((e.Al2O3||0) > 5) glassType = 'Aluminosilicate';
+  return { SiO2, density, cte, transmit550, solarTransmit, ri, softT, modulus, thermalK, glassType };
+}
+
+// ── RENDER ENGINE ─────────────────────────────────
+function setMixFamily(fam) {
+  mixFamily = fam;
+  // Update family button styles
+  ['al','ss','glass'].forEach(f => {
+    const btn = document.getElementById('fam-'+f);
+    const fm  = MIX_FAMILIES[f];
+    if (f === fam) {
+      btn.style.borderColor = fm.color;
+      btn.style.color = fm.color;
+      btn.style.background = fm.color+'22';
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.borderColor = 'rgba(255,255,255,0.1)';
+      btn.style.color = 'var(--muted)';
+      btn.style.background = 'rgba(255,255,255,0.02)';
+      btn.style.fontWeight = '400';
+    }
+  });
+  const fm = MIX_FAMILIES[fam];
+  document.getElementById('mix-family-desc').textContent = fm.desc;
+  // Load default values
+  mixElem = {};
+  fm.elements.forEach(el => mixElem[el.id] = el.def);
+  renderPresets();
+  renderElemSliders();
+  updateMixer();
+}
+
+function renderPresets() {
+  const fm = MIX_FAMILIES[mixFamily];
+  document.getElementById('mix-presets').innerHTML = fm.presets.map(p =>
+    `<button onclick='loadPreset(${JSON.stringify(p.vals)})' style="
+      padding:6px 14px;border-radius:6px;font-size:0.78rem;cursor:pointer;
+      border:1px solid ${fm.color}66;background:${fm.color}11;color:${fm.color};
+      font-weight:600;transition:all 0.15s"
+      onmouseover="this.style.background='${fm.color}33'" onmouseout="this.style.background='${fm.color}11'">
+      ${p.name}
+    </button>`).join('');
+}
+
+function loadPreset(vals) {
+  const fm = MIX_FAMILIES[mixFamily];
+  fm.elements.forEach(el => {
+    mixElem[el.id] = vals[el.id] !== undefined ? vals[el.id] : 0;
+  });
+  renderElemSliders();
+  updateMixer();
+}
+
+function renderElemSliders() {
+  const fm = MIX_FAMILIES[mixFamily];
+  const usedTotal = fm.elements.reduce((s,el)=>s+(mixElem[el.id]||0),0);
+  const balance = Math.max(0, 100 - usedTotal);
+
+  document.getElementById('mix-elem-sliders').innerHTML = fm.elements.map(el => {
+    const v = mixElem[el.id] || 0;
+    const pct = ((v - el.min) / (el.max - el.min) * 100).toFixed(1);
+    return `
+    <div class="elem-row">
+      <div class="elem-header">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:9px;height:9px;border-radius:50%;background:${el.color}"></div>
+          <span class="elem-lbl" style="color:${el.color}">${el.name}</span>
+          <span class="elem-range-lbl">[${el.min}–${el.max}%]</span>
+        </div>
+        <input type="number" class="elem-val-input" id="einput-${el.id}"
+          style="color:${el.color};border-color:${el.color}55"
+          min="${el.min}" max="${el.max}" step="${el.max>5?0.1:0.01}" value="${v}"
+          oninput="mixElem['${el.id}']=parseFloat(this.value)||0;syncElemSlider('${el.id}');updateMixer()">
+      </div>
+      <input type="range" class="elem-slider" id="esl-${el.id}"
+        min="${el.min}" max="${el.max}" step="${el.max>5?0.1:0.01}" value="${v}"
+        style="background:linear-gradient(to right,${el.color} 0%,${el.color} ${pct}%,rgba(255,255,255,0.08) ${pct}%)"
+        oninput="mixElem['${el.id}']=parseFloat(this.value);document.getElementById('einput-${el.id}').value=parseFloat(this.value);syncElemSliderBg('${el.id}','${el.color}');updateMixer()">
+      <div class="elem-hint">${el.hint}</div>
+    </div>`;
+  }).join('');
+
+  // Balance row
+  const bc = fm.color;
+  document.getElementById('mix-balance-row').style.cssText =
+    `background:${bc}11;border:1px solid ${bc}44;border-radius:8px;padding:10px 14px`;
+  document.getElementById('mix-balance-row').innerHTML =
+    `<span style="color:${bc};font-weight:700">${fm.base} (Balance):</span>
+     <span id="balance-val" style="color:${bc};font-family:monospace;font-size:1.1rem;font-weight:800;margin:0 10px">${balance.toFixed(2)}%</span>
+     <span style="font-size:0.7rem;color:var(--muted)">= 100 − Σ(alloying elements)</span>
+     <span id="bal-warn" style="font-size:0.72rem;margin-left:8px;color:${balance<0?'#ef4444':balance>99.9?'#f59e0b':'#10b981'}">${balance<0?'⚠ OVER 100%!':balance>99.5?'No alloying elements':'✓'}</span>`;
+}
+
+function syncElemSlider(id) {
+  const sl = document.getElementById('esl-'+id);
+  const el = MIX_FAMILIES[mixFamily].elements.find(e=>e.id===id);
+  if (!sl || !el) return;
+  const v = Math.min(el.max, Math.max(el.min, mixElem[id]||0));
+  sl.value = v;
+  syncElemSliderBg(id, el.color);
+}
+
+function syncElemSliderBg(id, color) {
+  const sl = document.getElementById('esl-'+id);
+  const el = MIX_FAMILIES[mixFamily].elements.find(e=>e.id===id);
+  if (!sl || !el) return;
+  const v = parseFloat(sl.value);
+  const pct = ((v - el.min) / (el.max - el.min) * 100).toFixed(1);
+  sl.style.background = `linear-gradient(to right,${color} 0%,${color} ${pct}%,rgba(255,255,255,0.08) ${pct}%)`;
+}
+
+function updateMixer() {
+  const fm = MIX_FAMILIES[mixFamily];
+  const e = mixElem;
+  const usedTotal = fm.elements.reduce((s,el)=>s+(e[el.id]||0),0);
+  const balance = Math.max(0, 100-usedTotal);
+  const balEl = document.getElementById('balance-val');
+  const balWarn = document.getElementById('bal-warn');
+  if (balEl) { balEl.textContent = balance.toFixed(2)+'%'; }
+  if (balWarn) { balWarn.textContent = balance<0?'⚠ OVER 100%!':balance>99.5?'No alloying elements':'✓'; balWarn.style.color=balance<0?'#ef4444':balance>99.5?'#f59e0b':'#10b981'; }
+
+  let tiles=[], steps=[], rules=[], gradeMatch='', radarData=[];
+
+  // ── ALUMINUM ──
+  if (mixFamily === 'al') {
+    const r = calcAl(e);
+    // Grade matching
+    const dist = (a,b) => {
+      const keys=['Si','Cu','Mg','Mn','Zn','Cr','Ti','Fe'];
+      return keys.reduce((s,k)=>s+Math.pow((a[k]||0)-(b[k]||0),2),0);
+    };
+    const presets = MIX_FAMILIES.al.presets;
+    const closest = presets.reduce((best,p)=>dist(e,p.vals)<dist(e,best.vals)?p:best, presets[0]);
+    const d2 = Math.sqrt(dist(e, closest.vals));
+    gradeMatch = `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(168,199,250,0.08);border:1px solid rgba(168,199,250,0.25);border-radius:8px;margin-bottom:12px">
+      <span style="font-size:1.3rem">⬡</span>
+      <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Closest Standard Grade</div>
+      <div style="font-size:1rem;font-weight:800;color:#a8c7fa">${closest.name}</div></div>
+      <div style="margin-left:auto;text-align:right"><div style="font-size:0.7rem;color:var(--muted)">Composition Distance</div>
+      <div style="font-family:monospace;font-weight:700;color:${d2<0.5?'#10b981':d2<1.5?'#f59e0b':'#ef4444'}">${d2.toFixed(2)} ${d2<0.5?'✓ Match':d2<1.5?'∼ Similar':'✗ Different'}</div></div>
+      <div style="margin-left:16px;text-align:right"><div style="font-size:0.7rem;color:var(--muted)">Precipitation</div>
+      <div style="font-size:0.78rem;font-weight:600;color:#6ee7b7">${r.precip}</div></div>
+    </div>`;
+    tiles = [
+      { lbl:'Density',      val:r.density.toFixed(0),   unit:'kg/m³',    color:'#a8c7fa' },
+      { lbl:'Young\'s Mod.',val:r.modulus.toFixed(1),   unit:'GPa',      color:'#93c5fd' },
+      { lbl:'Yield Str.',   val:r.yieldStr.toFixed(0),  unit:'MPa',      color:'#6ee7b7' },
+      { lbl:'Tensile UTS',  val:r.tensile.toFixed(0),   unit:'MPa',      color:'#f472b6' },
+      { lbl:'Hardness',     val:r.hardness.toFixed(0),  unit:'HB',       color:'#f59e0b' },
+      { lbl:'Thermal K',    val:r.thermalK.toFixed(1),  unit:'W/m·K',    color:'#fb923c' },
+      { lbl:'Elec. Cond.',  val:r.iacs.toFixed(1),      unit:'% IACS',   color:'#34d399' },
+      { lbl:'Corrosion',    val:r.corr.toFixed(1),      unit:'/10',      color:'#c4b5fd' },
+      { lbl:'Elongation',   val:r.elong.toFixed(1),     unit:'%',        color:'#94a3b8' },
+    ];
+    steps = [
+      { color:'#a8c7fa', title:'STEP 1 — Density (Vegard law approximation)',
+        expr:'ρ = 2700 + 11.2·Cu - 2.2·Mg + 0.5·Si + 5.8·Zn + 3.2·Fe [kg/m³]',
+        calc:`= 2700 + 11.2×${(e.Cu||0).toFixed(2)} − 2.2×${(e.Mg||0).toFixed(2)} + 0.5×${(e.Si||0).toFixed(2)} + 5.8×${(e.Zn||0).toFixed(2)}`,
+        res:`ρ = ${r.density.toFixed(0)} kg/m³` },
+      { color:'#34d399', title:'STEP 2 — Electrical Conductivity (Matthiessen\'s rule)',
+        expr:'σ_IACS = 61 − 1.6·Cu − 4.5·Mg − 1.0·Si − 4.0·Mn − 0.8·Zn − 1.5·Cr  [% IACS]',
+        calc:`= 61 − 1.6×${(e.Cu||0).toFixed(2)} − 4.5×${(e.Mg||0).toFixed(2)} − 1.0×${(e.Si||0).toFixed(2)} − 4.0×${(e.Mn||0).toFixed(2)}`,
+        res:`σ_IACS = ${r.iacs.toFixed(1)} %   →   k = ${r.thermalK.toFixed(1)} W/m·K` },
+      { color:'#6ee7b7', title:'STEP 3 — Solid-Solution Strengthening (Taylor/Fleischer)',
+        expr:'Δσ_ss = 25·Mg + 30·Cu + 18·Zn + 8·Si  [MPa — linear approximation]',
+        calc:`= 25×${(e.Mg||0).toFixed(2)} + 30×${(e.Cu||0).toFixed(2)} + 18×${(e.Zn||0).toFixed(2)} + 8×${(e.Si||0).toFixed(2)}`,
+        res:`Δσ_ss = ${(25*(e.Mg||0)+30*(e.Cu||0)+18*(e.Zn||0)+8*(e.Si||0)).toFixed(0)} MPa` },
+      { color:'#f59e0b', title:'STEP 4 — Precipitation Hardening Contribution',
+        expr: r.precip==='Solid solution only'
+          ? 'No precipitating system active (need Mg+Si>0.5, or Cu>1, or Zn+Mg>3)'
+          : `Δσ_precip (${r.precip}):\n  6xxx: 70 + 60·Mg·Si/(Mg+Si)  2xxx: 80·Cu  7xxx: 100 + 40·Zn`,
+        calc: `Δσ_precip = ${((25*(e.Mg||0)+30*(e.Cu||0)+18*(e.Zn||0)+8*(e.Si||0))>0?(r.yieldStr-40-(25*(e.Mg||0)+30*(e.Cu||0)+18*(e.Zn||0)+8*(e.Si||0))):0).toFixed(0)} MPa`,
+        res:`Mechanism: ${r.precip}` },
+      { color:'#f472b6', title:'STEP 5 — Total Yield & Tensile Strength',
+        expr:'σ_y = 40 (base) + Δσ_ss + Δσ_precip    σ_uts = σ_y × k_strain_hardening',
+        calc:`σ_y = 40 + ${r.yieldStr-40 > 0 ? (r.yieldStr-40).toFixed(0) : 0} = ${r.yieldStr.toFixed(0)} MPa`,
+        res:`σ_y = ${r.yieldStr.toFixed(0)} MPa   |   σ_uts = ${r.tensile.toFixed(0)} MPa   |   HB = ${r.hardness.toFixed(0)}` },
+      { color:'#c4b5fd', title:'STEP 6 — Corrosion Resistance Score',
+        expr:'Corr = 8 − 2.5·Cu + 0.5·Mg − 0.5·Zn + 0.3·Si  (scale 1–10)',
+        calc:`= 8 − ${(2.5*(e.Cu||0)).toFixed(2)} + ${(0.5*(e.Mg||0)).toFixed(2)} − ${(0.5*(e.Zn||0)).toFixed(2)}`,
+        res:`Corrosion Index = ${r.corr.toFixed(1)}/10 ${r.corr>7?'✓ Good':r.corr>4?'⚠ Moderate':'✗ Poor'}` },
+    ];
+    rules = [
+      { name:'Solid-Solution Hardening', formula:'Δσ_ss = Σ kᵢ·cᵢ', desc:'Solute atoms distort lattice → resist dislocation glide. Mg most effective in Al.', val:`${(25*(e.Mg||0)+30*(e.Cu||0)+18*(e.Zn||0)+8*(e.Si||0)).toFixed(0)} MPa`, color:'#6ee7b7' },
+      { name:'Precipitation Hardening', formula:'Δσ_p = M·τ_CRSS (Orowan/shearing)', desc:`${r.precip}. Coherent precipitates cut or bypass (Orowan loop) dislocations.`, val:`${(r.yieldStr - 40 - (25*(e.Mg||0)+30*(e.Cu||0)+18*(e.Zn||0)+8*(e.Si||0))).toFixed(0)} MPa extra`, color:'#f59e0b' },
+      { name:'Hall-Petch (grain size)', formula:'σ_y = σ₀ + k·d^(−½)', desc:'Grain boundaries block dislocations. Assumes d ≈ 30–50 µm (typical wrought Al).', val:'~15–25 MPa (grain size term)', color:'#a8c7fa' },
+    ];
+    radarData = [
+      { label:'Strength', val: Math.min(10, r.tensile/700*10) },
+      { label:'Conductivity', val: r.iacs/61*10 },
+      { label:'Corrosion', val: r.corr },
+      { label:'Lightness', val: Math.max(0, (3000-r.density)/500) },
+      { label:'Ductility', val: Math.min(10, r.elong/30*10) },
+      { label:'Machinability', val: Math.min(10, (r.hardness<80?9:r.hardness<150?7:5)) },
+    ];
+  }
+
+  // ── STAINLESS STEEL ──
+  else if (mixFamily === 'ss') {
+    const r = calcSS(e);
+    const presets = MIX_FAMILIES.ss.presets;
+    const dist = (a,b)=>{const ks=['Cr','Ni','Mo','C','Mn','Si','N'];return ks.reduce((s,k)=>s+Math.pow((a[k]||0)-(b[k]||0),2),0);};
+    const closest = presets.reduce((best,p)=>dist(e,p.vals)<dist(e,best.vals)?p:best,presets[0]);
+    gradeMatch = `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(196,181,253,0.08);border:1px solid rgba(196,181,253,0.25);border-radius:8px;margin-bottom:12px">
+      <span style="font-size:1.3rem">◈</span>
+      <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Closest Grade</div>
+      <div style="font-size:1rem;font-weight:800;color:#c4b5fd">${closest.name}</div></div>
+      <div style="margin-left:auto;text-align:right"><div style="font-size:0.7rem;color:var(--muted)">Microstructure</div>
+      <div style="font-weight:700;color:${r.micro.includes('Aus')?'#6ee7b7':r.micro.includes('Dup')?'#f59e0b':'#a8c7fa'}">${r.micro}</div></div>
+      <div style="margin-left:16px;text-align:right"><div style="font-size:0.7rem;color:var(--muted)">Magnetic</div>
+      <div style="font-weight:700;color:#f472b6">${r.magnetic}</div></div>
+    </div>`;
+    tiles = [
+      { lbl:'PREN',         val:r.PREN.toFixed(1),      unit:'(≥25=marine OK)',color:'#6ee7b7' },
+      { lbl:'Cr Equiv.',    val:r.Creq.toFixed(1),      unit:'(Schaeffler)',  color:'#a8c7fa' },
+      { lbl:'Ni Equiv.',    val:r.Nieq.toFixed(1),      unit:'(Schaeffler)',  color:'#c4b5fd' },
+      { lbl:'Microstructure',val:r.micro.split(' ')[0], unit:r.micro,        color:'#f59e0b' },
+      { lbl:'Density',      val:r.density.toFixed(0),   unit:'kg/m³',        color:'#94a3b8' },
+      { lbl:'Tensile UTS',  val:r.tensile.toFixed(0),   unit:'MPa',          color:'#f472b6' },
+      { lbl:'Yield Str.',   val:r.yieldStr.toFixed(0),  unit:'MPa',          color:'#93c5fd' },
+      { lbl:'Thermal K',    val:r.thermalK.toFixed(2),  unit:'W/m·K',        color:'#fb923c' },
+      { lbl:'Corrosion',    val:r.corr.toFixed(1),      unit:'/10',          color:'#34d399' },
+    ];
+    steps = [
+      { color:'#6ee7b7', title:'STEP 1 — PREN (Pitting Resistance Equivalent Number)',
+        expr:'PREN = %Cr + 3.3 × %Mo + 16 × %N',
+        calc:`= ${(e.Cr||0).toFixed(1)} + 3.3×${(e.Mo||0).toFixed(2)} + 16×${(e.N||0).toFixed(3)}`,
+        res:`PREN = ${r.PREN.toFixed(1)}   ${r.PREN>=40?'★ Super-austenitics':r.PREN>=32?'✓ Marine grade (316L≈26)':r.PREN>=18?'✓ Atmospheric service':'⚠ Limited corrosion resistance'}` },
+      { color:'#a8c7fa', title:'STEP 2 — Schaeffler Cr Equivalent (ferrite/martensite stabilisers)',
+        expr:'Cr_eq = %Cr + %Mo + 1.5·%Si + 0.5·%Nb',
+        calc:`= ${(e.Cr||0).toFixed(1)} + ${(e.Mo||0).toFixed(2)} + 1.5×${(e.Si||0).toFixed(2)}`,
+        res:`Cr_eq = ${r.Creq.toFixed(2)}` },
+      { color:'#c4b5fd', title:'STEP 3 — Schaeffler Ni Equivalent (austenite stabilisers)',
+        expr:'Ni_eq = %Ni + 30·%C + 0.5·%Mn + 30·%N',
+        calc:`= ${(e.Ni||0).toFixed(1)} + 30×${(e.C||0).toFixed(3)} + 0.5×${(e.Mn||0).toFixed(2)} + 30×${(e.N||0).toFixed(3)}`,
+        res:`Ni_eq = ${r.Nieq.toFixed(2)}   →   Microstructure: ${r.micro}` },
+      { color:'#f472b6', title:'STEP 4 — UTS Estimation (empirical regression)',
+        expr:'σ_uts ≈ 480 + 10·Cr + 8·Ni + 25·Mo + 1500·C + 30·Mn + 40·N  [MPa]',
+        calc:`= 480 + ${(10*(e.Cr||0)).toFixed(0)} + ${(8*(e.Ni||0)).toFixed(0)} + ${(25*(e.Mo||0)).toFixed(0)} + ${(1500*(e.C||0)).toFixed(0)} + ${(30*(e.Mn||0)).toFixed(0)}`,
+        res:`σ_uts = ${r.tensile.toFixed(0)} MPa   |   σ_y ≈ ${r.yieldStr.toFixed(0)} MPa   |   HB ≈ ${r.hardness.toFixed(0)}` },
+      { color:'#f59e0b', title:'STEP 5 — Sensitisation Risk (carbide precipitation)',
+        expr:'Risk: high if C > 0.03% and NOT solution-annealed — Cr₂₃C₆ at grain boundaries → depletion zone',
+        calc:`C = ${(e.C||0).toFixed(3)} wt%   ${(e.C||0)>0.03?'→ "L" grade required for weld sensitisation protection':'→ Low carbon, sensitisation resistance good'}`,
+        res:`Sensitisation risk: ${(e.C||0)>0.05?'HIGH — use L-grade or stabilised grade':(e.C||0)>0.03?'MODERATE':'LOW ✓'}` },
+    ];
+    rules = [
+      { name:'Passive Film (Cr₂O₃)', formula:'≥10.5% Cr required', desc:'Cr₂O₃ self-healing film. Mo extends stability to Cl⁻ environments. PREN≥25 for marine.', val:`PREN = ${r.PREN.toFixed(1)}`, color:'#6ee7b7' },
+      { name:'Austenite Stability', formula:'Ni_eq vs Cr_eq (Schaeffler)', desc:`Cr_eq=${r.Creq.toFixed(1)} vs Ni_eq=${r.Nieq.toFixed(1)} → ${r.micro}`, val:r.micro, color:'#c4b5fd' },
+      { name:'Solution Strengthening', formula:'σ ∝ Cr,Mo,N in solid solution', desc:'SS strengthens mainly by solid solution. Precipitation of carbides (M₂₃C₆) can both strengthen and sensitise.', val:`${r.tensile.toFixed(0)} MPa UTS`, color:'#a8c7fa' },
+    ];
+    radarData = [
+      { label:'Corrosion', val: Math.min(10, r.PREN/5) },
+      { label:'Strength',  val: Math.min(10, r.tensile/120) },
+      { label:'Toughness', val: r.micro.includes('Aus')?9:r.micro.includes('Dup')?7:5 },
+      { label:'Weldability',val:r.micro.includes('Aus')?8:(e.C||0)<0.03?7:4 },
+      { label:'Cost',       val: Math.max(1, 10 - (e.Ni||0)*0.3 - (e.Mo||0)*0.4) },
+      { label:'Hygienic',   val: r.micro.includes('Aus')?9:6 },
+    ];
+  }
+
+  // ── GLASS ──
+  else if (mixFamily === 'glass') {
+    const r = calcGlass(e);
+    const presets = MIX_FAMILIES.glass.presets;
+    const dist = (a,b)=>{const ks=['Na2O','CaO','B2O3','Al2O3','MgO','K2O','Fe2O3','TiO2'];return ks.reduce((s,k)=>s+Math.pow((a[k]||0)-(b[k]||0),2),0);};
+    const closest = presets.reduce((best,p)=>dist(e,p.vals)<dist(e,best.vals)?p:best,presets[0]);
+    gradeMatch = `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(147,197,253,0.08);border:1px solid rgba(147,197,253,0.25);border-radius:8px;margin-bottom:12px">
+      <span style="font-size:1.3rem">◇</span>
+      <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Glass Type / Closest Preset</div>
+      <div style="font-size:1rem;font-weight:800;color:#93c5fd">${r.glassType}  ·  ${closest.name}</div></div>
+      <div style="margin-left:auto;text-align:right"><div style="font-size:0.7rem;color:var(--muted)">SiO₂ Balance</div>
+      <div style="font-weight:700;color:#93c5fd;font-family:monospace">${r.SiO2.toFixed(1)} wt%</div></div>
+      <div style="margin-left:16px;text-align:right"><div style="font-size:0.7rem;color:var(--muted)">Solar Transmit.</div>
+      <div style="font-weight:800;font-size:1.1rem;font-family:monospace;color:${r.solarTransmit>91?'#10b981':r.solarTransmit>85?'#f59e0b':'#ef4444'}">${r.solarTransmit.toFixed(1)}%</div></div>
+    </div>`;
+    tiles = [
+      { lbl:'Solar Transmit.',val:r.solarTransmit.toFixed(1), unit:'%  (3.2mm)',  color:r.solarTransmit>91?'#10b981':'#f59e0b' },
+      { lbl:'Transmit @550nm',val:r.transmit550.toFixed(1),   unit:'%',          color:'#93c5fd' },
+      { lbl:'CTE',            val:r.cte.toFixed(3),           unit:'×10⁻⁶/°C',  color:'#f59e0b' },
+      { lbl:'Density',        val:(r.density/1000).toFixed(3),unit:'g/cm³',      color:'#a8c7fa' },
+      { lbl:'Refractive Idx', val:r.ri.toFixed(4),            unit:'n_D',        color:'#c4b5fd' },
+      { lbl:'Softening Pt.',  val:r.softT.toFixed(0),         unit:'°C',         color:'#ef4444' },
+      { lbl:'Young\'s Mod.',  val:r.modulus.toFixed(1),       unit:'GPa',        color:'#6ee7b7' },
+      { lbl:'Thermal K',      val:r.thermalK.toFixed(3),      unit:'W/m·K',      color:'#fb923c' },
+      { lbl:'SiO₂ Balance',   val:r.SiO2.toFixed(1),         unit:'wt%',        color:'#94a3b8' },
+    ];
+    steps = [
+      { color:'#93c5fd', title:'STEP 1 — SiO₂ Balance',
+        expr:'SiO₂ = 100 − Σ(oxide additions)   [wt%]',
+        calc:`= 100 − ${(100-r.SiO2).toFixed(2)}  (Na₂O+CaO+B₂O₃+Al₂O₃+MgO+K₂O+Fe₂O₃+TiO₂)`,
+        res:`SiO₂ = ${r.SiO2.toFixed(2)} wt%` },
+      { color:'#ef4444', title:'STEP 2 — Solar Transmittance (Beer-Lambert, Fe₂O₃ absorber)',
+        expr:'T_solar ≈ (0.965 − 3.5·%Fe₂O₃) × 100   [% at 3.2mm, simplified]',
+        calc:`= (0.965 − 3.5×${(e.Fe2O3||0).toFixed(4)}) × 100`,
+        res:`T_solar = ${r.solarTransmit.toFixed(2)}%   ${r.solarTransmit>91.5?'✓ IEC/EN standard (≥91.5%)':r.solarTransmit>88?'⚠ Below standard':'✗ Reduce Fe₂O₃'}` },
+      { color:'#f59e0b', title:'STEP 3 — CTE (Oxide Contribution Model, Appen method)',
+        expr:'CTE = Σ(xᵢ · αᵢ)  where αᵢ: SiO₂=−0.1, Na₂O=33, CaO=13, B₂O₃=−3, Al₂O₃=6, MgO=6  [×10⁻⁶/°C]',
+        calc:`= ${r.SiO2.toFixed(1)}×(−0.1) + ${(e.Na2O||0).toFixed(1)}×33 + ${(e.CaO||0).toFixed(1)}×13 + ${(e.B2O3||0).toFixed(1)}×(−3)`,
+        res:`CTE = ${r.cte.toFixed(4)} ×10⁻⁶/°C   (Si cell CTE = 2.6 → ΔCTEglass-Si = ${Math.abs(r.cte-2.6).toFixed(3)})` },
+      { color:'#a8c7fa', title:'STEP 4 — Density (Additive Partial Molar Volumes)',
+        expr:'ρ = Σ(xᵢ/100 · ρᵢ) where: SiO₂=2.20, Na₂O=2.27, CaO=3.35, B₂O₃=1.84, Al₂O₃=3.99 g/cm³',
+        calc:`= ${r.SiO2.toFixed(1)}%×2.20 + ${(e.Na2O||0).toFixed(1)}%×2.27 + ${(e.CaO||0).toFixed(1)}%×3.35 + ...`,
+        res:`ρ = ${(r.density/1000).toFixed(4)} g/cm³` },
+      { color:'#c4b5fd', title:'STEP 5 — Refractive Index',
+        expr:'n ≈ 1.458 + 0.005·(Na₂O/14) + 0.008·TiO₂ − 0.004·(B₂O₃/13)',
+        calc:`= 1.458 + ${(0.005*(e.Na2O||0)/14).toFixed(5)} + ${(0.008*(e.TiO2||0)).toFixed(5)} − ${(0.004*(e.B2O3||0)/13).toFixed(5)}`,
+        res:`n_D = ${r.ri.toFixed(4)}   (standard glass ≈ 1.515, AR coating targets ≈ 1.23)` },
+    ];
+    rules = [
+      { name:'Fe₂O₃ — Solar Key', formula:'T = 0.965 − 3.5·%Fe₂O₃', desc:`Current Fe₂O₃ = ${(e.Fe2O3||0).toFixed(4)}%. Target <0.015% for ≥91.5% solar transmittance (IEC standard).`, val:`T = ${r.solarTransmit.toFixed(1)}%`, color:r.solarTransmit>91?'#10b981':'#ef4444' },
+      { name:'B₂O₃ — CTE Reducer', formula:'ΔCTE ≈ −3×10⁻⁷ per wt% B₂O₃', desc:`Current B₂O₃ = ${(e.B2O3||0)}%. Si cell CTE=2.6×10⁻⁶. Closer match → less thermal stress in encapsulant.`, val:`ΔCTE vs Si = ${Math.abs(r.cte-2.6).toFixed(3)}`, color:'#6ee7b7' },
+      { name:'Na₂O+K₂O — Fluxes', formula:'Lower viscosity η(T), easier melting', desc:`Alkalis reduce Tg and softening point. High alkali improves formability but lowers chemical durability.`, val:`Alkali = ${((e.Na2O||0)+(e.K2O||0)).toFixed(1)} wt%`, color:'#f59e0b' },
+    ];
+    radarData = [
+      { label:'Solar Transmit', val: r.solarTransmit/10 },
+      { label:'Thermal Resist', val: Math.min(10,(r.cte<5?9:r.cte<8?6:3)) },
+      { label:'Chemical Dur.', val: Math.min(10, (100-r.SiO2<25?8:5)) },
+      { label:'Strength',       val: Math.min(10, r.modulus/9) },
+      { label:'Meltability',   val: Math.min(10, (r.softT<800?9:r.softT<1000?6:3)) },
+      { label:'Low Iron',       val: Math.max(0, 10 - (e.Fe2O3||0)*200) },
+    ];
+  }
+
+  // ── RENDER TILES ──
+  document.getElementById('mix-grade-match').innerHTML = gradeMatch;
+  document.getElementById('mix-metrics').innerHTML = tiles.map(t=>`
+    <div class="metric-tile">
+      <div class="val" style="color:${t.color};font-size:1.0rem;word-break:break-all">${t.val}</div>
+      <div class="lbl">${t.lbl}</div>
+      <div class="unit" style="font-size:0.62rem">${t.unit}</div>
+    </div>`).join('');
+
+  // ── RENDER CALC STEPS ──
+  document.getElementById('mix-calc-steps').innerHTML = steps.map(s=>`
+    <div class="calc-step" style="border-left-color:${s.color}">
+      <div class="calc-step-hdr" style="color:${s.color}">${s.title}</div>
+      <div class="calc-step-expr" style="color:var(--muted);font-size:0.74rem;white-space:pre-wrap">${s.expr}</div>
+      <div class="calc-step-expr" style="color:#e2e8f0;margin-top:2px">${s.calc}</div>
+      <div class="calc-step-res" style="color:${s.color}">→ ${s.res}</div>
+    </div>`).join('');
+
+  // ── MIXING RULE CARDS ──
+  document.getElementById('mix-rule-cards').innerHTML = rules.map(r=>`
+    <div class="result-panel">
+      <div class="title" style="color:${r.color}">${r.name}</div>
+      <div style="font-size:0.72rem;font-family:monospace;color:${r.color}88;margin:4px 0 6px">${r.formula}</div>
+      <div style="font-size:0.74rem;color:var(--muted);margin-bottom:10px;line-height:1.5">${r.desc}</div>
+      <div style="font-size:1.2rem;font-weight:800;font-family:monospace;color:${r.color}">${r.val}</div>
+    </div>`).join('');
+
+  // ── PIE CHART ──  (fm already declared above)
+  const pieLabels = [], pieData = [], pieBg = [], pieBorder = [];
+  fm.elements.forEach(el => {
+    const v = e[el.id]||0;
+    if (v > 0) { pieLabels.push(el.id); pieData.push(v); pieBg.push(el.color+'55'); pieBorder.push(el.color); }
+  });
+  const bal = Math.max(0,100-usedTotal);
+  if (bal > 0) { pieLabels.push(fm.base); pieData.push(bal); pieBg.push(fm.color+'33'); pieBorder.push(fm.color); }
+  if (mixPieChart) {
+    mixPieChart.data.labels = pieLabels; mixPieChart.data.datasets[0].data = pieData;
+    mixPieChart.data.datasets[0].backgroundColor = pieBg; mixPieChart.data.datasets[0].borderColor = pieBorder;
+    mixPieChart.update('none');
+  }
+
+  // ── RADAR CHART ──
+  if (mixLineChart) {
+    mixLineChart.data.labels = radarData.map(r=>r.label);
+    mixLineChart.data.datasets[0].data = radarData.map(r=>r.val);
+    mixLineChart.data.datasets[0].borderColor = fm.color;
+    mixLineChart.data.datasets[0].backgroundColor = fm.color+'22';
+    mixLineChart.update('none');
+  }
+}
+
+function initMixerCharts() {
+  mixPieChart = new Chart(document.getElementById('chartPie'), {
+    type: 'doughnut',
+    data:{ labels:[], datasets:[{ data:[], backgroundColor:[], borderColor:[], borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}} }, cutout:'55%' }
+  });
+
+  mixLineChart = new Chart(document.getElementById('chartMixLine'), {
+    type:'radar',
+    data:{ labels:['Prop1','Prop2','Prop3','Prop4','Prop5','Prop6'],
+      datasets:[{ label:'This Alloy', data:[5,5,5,5,5,5], borderColor:'#a8c7fa', backgroundColor:'rgba(168,199,250,0.15)', borderWidth:2, pointBackgroundColor:'#a8c7fa' }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ r:{ min:0, max:10, ticks:{color:'#64748b',backdropColor:'transparent',font:{size:8}}, grid:{color:'rgba(255,255,255,0.08)'}, pointLabels:{color:'#94a3b8',font:{size:10}} } },
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}} } }
+  });
+
+  setMixFamily('al');  // default to Aluminum, loads presets + sliders + updateMixer
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 3: SOLAR PERFORMANCE
+// ══════════════════════════════════════════════════
+function initSolarPanel() {
+  const kpis = [
+    { label:'Peak Power (Al frame)', val:'380', unit:'W/m²', color:'#a8c7fa', icon:'⚡' },
+    { label:'Optical Transmittance', val:'96.2', unit:'% (glass)', color:'#93c5fd', icon:'💡' },
+    { label:'Temp. Coefficient', val:'-0.39', unit:'%/°C', color:'#f59e0b', icon:'🌡' },
+    { label:'25yr Energy Yield', val:'9,240', unit:'kWh/kWp', color:'#6ee7b7', icon:'☀️' },
+  ];
+  document.getElementById('solar-kpis').innerHTML = kpis.map(k=>`
+    <div class="metric-tile">
+      <div style="font-size:1.5rem;margin-bottom:6px">${k.icon}</div>
+      <div class="val" style="color:${k.color}">${k.val}</div>
+      <div class="lbl">${k.label}</div>
+      <div class="unit">${k.unit}</div>
+    </div>`).join('');
+
+  // Temperature loss chart
+  const temps = [0,10,20,25,30,40,50,60,70,80];
+  new Chart(document.getElementById('chartTempLoss'), {
+    type:'line',
+    data:{
+      labels:temps.map(t=>t+'°C'),
+      datasets:[
+        { label:'Al Frame (k=167)', data:temps.map(t=>100 - Math.max(0,(t-25)*0.35)), borderColor:'#a8c7fa', fill:false, tension:0.4 },
+        { label:'SS Housing (k=16.3)', data:temps.map(t=>100 - Math.max(0,(t-25)*0.42)), borderColor:'#c4b5fd', fill:false, tension:0.4 },
+        { label:'Perovskite (k=0.5)', data:temps.map(t=>100 - Math.max(0,(t-25)*0.55)), borderColor:'#6ee7b7', fill:false, tension:0.4 },
+        { label:'Standard Si', data:temps.map(t=>100 - Math.max(0,(t-25)*0.39)), borderColor:'#f59e0b', borderDash:[5,5], fill:false, tension:0.4 },
+      ]
+    },
+    options:{
+      ...chartDefaults,
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}}, title:{display:true,text:'Relative Power Output (%)',color:'#64748b',font:{size:10}} }
+    }
+  });
+
+  // Annual yield
+  new Chart(document.getElementById('chartYield'), {
+    type:'bar',
+    data:{
+      labels:['Al+Glass\n(standard)','Al+Glass\n+Perovskite','SS+Glass','Custom\nBlend','Perovskite\nOnly'],
+      datasets:[
+        { label:'kWh/kWp/year (est.)', data:[1450,1620,1380,1510,1710], backgroundColor:['rgba(168,199,250,0.25)','rgba(110,231,183,0.3)','rgba(196,181,253,0.25)','rgba(0,212,255,0.25)','rgba(110,231,183,0.4)'], borderColor:['#a8c7fa','#6ee7b7','#c4b5fd','#00d4ff','#6ee7b7'], borderWidth:2 }
+      ]
+    },
+    options:{...chartDefaults}
+  });
+
+  // Spectrum response
+  const wavelengths = [300,400,500,600,700,800,900,1000,1100];
+  new Chart(document.getElementById('chartSpectrum'), {
+    type:'line',
+    data:{
+      labels:wavelengths.map(w=>w+'nm'),
+      datasets:[
+        { label:'Glass Transmittance', data:[0.7,0.91,0.95,0.96,0.95,0.94,0.92,0.88,0.82], borderColor:'#93c5fd', fill:false, tension:0.4 },
+        { label:'Perovskite Absorptance', data:[0.95,0.98,0.97,0.95,0.90,0.72,0.40,0.12,0.02], borderColor:'#6ee7b7', fill:false, tension:0.4 },
+        { label:'Al Reflectance', data:[0.80,0.88,0.89,0.88,0.87,0.86,0.86,0.87,0.87], borderColor:'#a8c7fa', borderDash:[4,4], fill:false, tension:0.4 },
+        { label:'SS Absorptance', data:[0.55,0.50,0.45,0.42,0.41,0.40,0.39,0.39,0.38], borderColor:'#c4b5fd', borderDash:[4,4], fill:false, tension:0.4 },
+      ]
+    },
+    options:{...chartDefaults, scales:{x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{min:0,max:1,ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}}}}
+  });
+
+  // 20-year degradation
+  const years = Array.from({length:21},(_,i)=>i);
+  new Chart(document.getElementById('chartDegrade'), {
+    type:'line',
+    data:{
+      labels:years.map(y=>'Y'+y),
+      datasets:[
+        { label:'Al+Glass System', data:years.map(y=>100 - y*0.5), borderColor:'#a8c7fa', fill:false, tension:0.1 },
+        { label:'SS System', data:years.map(y=>100 - y*0.45), borderColor:'#c4b5fd', fill:false, tension:0.1 },
+        { label:'Perovskite', data:years.map(y=>100 - y*2.1 - (y>10?y*0.5:0)), borderColor:'#6ee7b7', fill:false, tension:0.1 },
+        { label:'IEC 61215 Standard', data:years.map(y=>y===0?100:y===1?97.5:y===25?80:null).filter(v=>v!==null), borderColor:'#ef4444', borderDash:[6,4], fill:false, pointRadius:[6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6], borderWidth:1 }
+      ]
+    },
+    options:{...chartDefaults}
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 4: COMPARISON
+// ══════════════════════════════════════════════════
+function buildCompareTable() {
+  const props = [
+    { label:'Density (kg/m³)', key:'density', low:true },
+    { label:"Young's Modulus (GPa)", key:'modulus', low:false },
+    { label:'Thermal Conductivity (W/m·K)', key:'thermalK', low:false },
+    { label:'CTE (×10⁻⁶/°C)', key:'cte', low:true },
+    { label:'Solar Absorptance', key:'absorptance', low:false },
+    { label:'Tensile Strength (MPa)', key:'tensile', low:false },
+    { label:'Corrosion Resistance (1-10)', key:'corrosion', low:false },
+    { label:'Cost Index (1-10)', key:'costIndex', low:true },
+  ];
+  const mats = Object.values(MATERIALS);
+  let html = '<thead><tr><th>Property</th>';
+  mats.forEach(m => { html += `<th><span class="tag tag-${m.tag}">${m.name.split(' ')[0]}</span></th>`; });
+  html += '</tr></thead><tbody>';
+
+  props.forEach(p => {
+    const vals = mats.map(m => m[p.key]);
+    const best = p.low ? Math.min(...vals) : Math.max(...vals);
+    const worst = p.low ? Math.max(...vals) : Math.min(...vals);
+    html += `<tr><td style="color:var(--muted);font-size:0.78rem">${p.label}</td>`;
+    vals.forEach((v,i) => {
+      const cls = v === best ? 'best' : v === worst ? 'worst' : '';
+      const disp = p.key==='absorptance' ? (v*100).toFixed(0)+'%' : v;
+      html += `<td class="${cls}" style="font-family:monospace">${disp}${v===best?' ★':''}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('compare-table').innerHTML = html;
+
+  // Scatter: cost vs performance index
+  new Chart(document.getElementById('chartScatter'), {
+    type:'scatter',
+    data:{
+      datasets: mats.map(m => ({
+        label:m.name,
+        data:[{ x:m.costIndex, y: (m.tensile/600*30 + m.thermalK/180*25 + m.absorptance*25 + m.corrosion/10*20) }],
+        backgroundColor: m.color+'99', borderColor:m.color, pointRadius:10, pointHoverRadius:14
+      }))
+    },
+    options:{
+      ...chartDefaults,
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:11}}} },
+      scales:{
+        x:{ min:1,max:10, title:{display:true,text:'Cost Index →',color:'#64748b',font:{size:10}}, ticks:{color:'#64748b'}, grid:{color:'rgba(255,255,255,0.05)'} },
+        y:{ title:{display:true,text:'Performance Index →',color:'#64748b',font:{size:10}}, ticks:{color:'#64748b'}, grid:{color:'rgba(255,255,255,0.05)'} }
+      }
+    }
+  });
+
+  // Suitability score
+  const scores = {
+    al:{ frame:9, thermal:9, weight:8, optical:3, longevity:9 },
+    glass:{ frame:2, thermal:4, weight:7, optical:10, longevity:9 },
+    ss:{ frame:8, thermal:5, weight:3, optical:4, longevity:9 },
+    new:{ frame:1, thermal:2, weight:5, optical:10, longevity:3 },
+  };
+  new Chart(document.getElementById('chartSuitability'), {
+    type:'bar',
+    data:{
+      labels:['Frame/Struct.','Thermal Mgmt','Weight','Optical','Longevity'],
+      datasets: mats.map(m => ({
+        label:m.name,
+        data: Object.values(scores[m.id]),
+        backgroundColor: m.color+'44', borderColor:m.color, borderWidth:2
+      }))
+    },
+    options:{
+      ...chartDefaults,
+      scales:{
+        x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{min:0,max:10,ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 5: NEW MATERIAL
+// ══════════════════════════════════════════════════
+function calcNewMat() {
+  const nm = {
+    name: document.getElementById('nm-name').value || 'Custom',
+    density: parseFloat(document.getElementById('nm-density').value) || 0,
+    modulus: parseFloat(document.getElementById('nm-modulus').value) || 0,
+    thermalK: parseFloat(document.getElementById('nm-therm').value) || 0,
+    cte: parseFloat(document.getElementById('nm-cte').value) || 0,
+    absorptance: parseFloat(document.getElementById('nm-abs').value) || 0,
+    tensile: parseFloat(document.getElementById('nm-tensile').value) || 0,
+    costIndex: parseFloat(document.getElementById('nm-cost').value) || 5,
+  };
+  if (!nm.density && !nm.modulus && !nm.thermalK) return;
+
+  // Score vs existing materials
+  const perfIndex = nm.tensile/600*30 + nm.thermalK/180*25 + nm.absorptance*25 + (11-nm.costIndex)/10*20;
+  const solarScore = nm.absorptance*40 + (nm.thermalK/180)*20 + (nm.tensile/600)*20 + ((11-nm.costIndex)/10)*20;
+  const weightScore = nm.density < 3000 ? 'Lightweight ✓' : nm.density < 6000 ? 'Medium' : 'Heavy';
+  const thermalClass = nm.thermalK > 50 ? 'Excellent' : nm.thermalK > 10 ? 'Good' : 'Poor';
+
+  document.getElementById('nm-results').innerHTML = `
+    <div class="grid2 gap12">
+      <div class="metric-tile"><div class="val" style="color:#6ee7b7">${solarScore.toFixed(1)}</div><div class="lbl">Solar Suitability</div><div class="unit">/100</div></div>
+      <div class="metric-tile"><div class="val" style="color:#00d4ff">${perfIndex.toFixed(1)}</div><div class="lbl">Performance Index</div><div class="unit">/100</div></div>
+      <div class="metric-tile"><div class="val" style="color:#f59e0b;font-size:1.1rem">${weightScore}</div><div class="lbl">Weight Class</div><div class="unit">${nm.density} kg/m³</div></div>
+      <div class="metric-tile"><div class="val" style="color:#a8c7fa;font-size:1.1rem">${thermalClass}</div><div class="lbl">Thermal Mgmt</div><div class="unit">${nm.thermalK} W/m·K</div></div>
+    </div>
+    <div class="result-panel mt16">
+      <div class="title">AI Analysis</div>
+      <div style="font-size:0.8rem;line-height:1.7;color:var(--text)">
+        <b style="color:#6ee7b7">${nm.name}</b> scores <b>${solarScore.toFixed(0)}/100</b> for solar applications.
+        ${nm.absorptance > 0.8 ? '⚡ High absorptance makes this ideal as an <b>active absorber layer</b>.' : nm.absorptance < 0.2 ? '💡 Low absorptance — better suited for <b>cover glass or reflective backing</b>.' : '🔧 Moderate absorptance — suitable for <b>structural or substrate</b> roles.'}
+        ${nm.thermalK > 50 ? ' Excellent thermal conductivity will minimize hotspot-induced losses.' : nm.thermalK < 2 ? ' Low thermal conductivity may cause localized heating — consider heat sink integration.' : ''}
+        ${nm.cte > 20 ? ' ⚠ High CTE may cause thermal stress with silicon cells (CTE ≈ 2.6) — encapsulation strategy critical.' : ''}
+        ${nm.costIndex > 7 ? ' 💰 High cost index — best justified in high-efficiency or space applications.' : ' Cost-effective for large-scale deployment.'}
+      </div>
+    </div>`;
+}
+
+function addCustomMaterial() {
+  const nm = {
+    name: document.getElementById('nm-name').value || 'Custom Material',
+    density: parseFloat(document.getElementById('nm-density').value) || 3000,
+    modulus: parseFloat(document.getElementById('nm-modulus').value) || 100,
+    thermalK: parseFloat(document.getElementById('nm-therm').value) || 5,
+    cte: parseFloat(document.getElementById('nm-cte').value) || 10,
+    absorptance: parseFloat(document.getElementById('nm-abs').value) || 0.5,
+    tensile: parseFloat(document.getElementById('nm-tensile').value) || 200,
+    costIndex: parseFloat(document.getElementById('nm-cost').value) || 5,
+  };
+  const newId = 'custom_'+Date.now();
+  customMaterials.push({...nm, id:newId});
+  renderCustomList();
+  calcNewMat();
+}
+
+function renderCustomList() {
+  const el = document.getElementById('custom-mat-list');
+  if (!customMaterials.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:12px">No custom materials yet.</div>'; return; }
+  el.innerHTML = `<table class="compare-table"><thead><tr>
+    <th>Name</th><th>Density</th><th>Modulus</th><th>Thermal K</th><th>Absorptance</th><th>Tensile</th><th>Cost Idx</th><th></th>
+  </tr></thead><tbody>` +
+  customMaterials.map((m,i) => `<tr>
+    <td style="color:#6ee7b7;font-weight:600">${m.name}</td>
+    <td style="font-family:monospace">${m.density}</td>
+    <td style="font-family:monospace">${m.modulus} GPa</td>
+    <td style="font-family:monospace">${m.thermalK} W/m·K</td>
+    <td style="font-family:monospace">${(m.absorptance*100).toFixed(0)}%</td>
+    <td style="font-family:monospace">${m.tensile} MPa</td>
+    <td style="font-family:monospace">${m.costIndex}/10</td>
+    <td><span style="cursor:pointer;color:var(--danger);font-size:0.75rem" onclick="removeCustom(${i})">✕ Remove</span></td>
+  </tr>`).join('') + '</tbody></table>';
+}
+
+function removeCustom(i) {
+  customMaterials.splice(i,1);
+  renderCustomList();
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 7: OPTIMIZER ENGINE
+// ══════════════════════════════════════════════════
+
+const OBJ_DESCRIPTIONS = {
+  solar: { title:'Maximize Solar Efficiency Index (SEI)', formula:'SEI = Σ(xᵢ·αᵢ) × [1 - 0.08·(ρ_blend/4000)] × (k_blend/180)^0.15', color:'#f59e0b', desc:'Weights high absorptance most heavily. Penalises excessive density and rewards thermal dissipation.' },
+  cost:  { title:'Minimize Blended Cost (¥/m²)', formula:'Cost = Σ(xᵢ·Cᵢ)  →  minimize', color:'#10b981', desc:'Pure cost minimisation using China market ¥/m² for each constituent. Constraints prevent degenerate solutions.' },
+  strength: { title:'Maximize Specific Strength σ/ρ (kNm/kg)', formula:'SS = Σ(xᵢ·σᵢ) / Σ(xᵢ·ρᵢ) × 1000', color:'#a8c7fa', desc:'Tensile strength divided by density. Favours aluminium and perovskite composites for lightweight structures.' },
+  thermal: { title:'Maximize Thermal Management Score (TMS)', formula:'TMS = (k_blend/180)×60 + (1−CTE_blend/90)×25 + (1−ρ_blend/8000)×15', color:'#00d4ff', desc:'Combines thermal conductivity (primary), low CTE stress resilience, and weight saving.' },
+  balanced: { title:'Multi-Objective Balanced Panel Score (BPS)', formula:'BPS = 0.35·SEI + 0.30·(1−Cost/200) + 0.20·TMS/100 + 0.15·(σ/σ_max)', color:'#7c3aed', desc:'Weighted combination for a production-ready solar panel. Equal importance to efficiency, cost, thermal, and structural.' },
+  lightweight: { title:'Lightweight High-Absorptance Index (LHAI)', formula:'LHAI = (αᵢ_blend × 50) + ((8000−ρ_blend)/6000 × 30) + (σ_blend/600 × 20)', color:'#6ee7b7', desc:'Best for BIPV / portable panels. Maximises absorptance while minimising mass.' },
+  marine: { title:'Marine-Grade Durability + Solar Score (MDS)', formula:'MDS = corrosion_blend×30 + SEI×40 + (k_blend/180)×30', color:'#93c5fd', desc:'Coastal / offshore deployment. Strong weight on corrosion resistance and solar efficiency.' },
+};
+
+// Compute blended properties from fractions object {al, glass, ss, new}
+function blendProps(f) {
+  const M = MATERIALS;
+  const C = CHINA_COST;
+  const density   = f.al*M.al.density   + f.glass*M.glass.density   + f.ss*M.ss.density   + f.new*M.new.density;
+  const tensile   = f.al*M.al.tensile   + f.glass*M.glass.tensile   + f.ss*M.ss.tensile   + f.new*M.new.tensile;
+  const thermalK  = f.al*M.al.thermalK  + f.glass*M.glass.thermalK  + f.ss*M.ss.thermalK  + f.new*M.new.thermalK;
+  const cte       = f.al*M.al.cte       + f.glass*M.glass.cte       + f.ss*M.ss.cte       + f.new*M.new.cte;
+  const absorb    = f.al*M.al.absorptance + f.glass*M.glass.absorptance + f.ss*M.ss.absorptance + f.new*M.new.absorptance;
+  const cost_m2   = f.al*C.al.cny_per_m2 + f.glass*C.glass.cny_per_m2 + f.ss*C.ss.cny_per_m2 + f.new*C.new.cny_per_m2;
+  const corrosion = f.al*M.al.corrosion + f.glass*M.glass.corrosion + f.ss*M.ss.corrosion + f.new*M.new.corrosion;
+  // Voigt modulus
+  const modulusV  = f.al*M.al.modulus   + f.glass*M.glass.modulus   + f.ss*M.ss.modulus   + f.new*(M.new.modulus||0.01);
+  // Reuss modulus
+  const inv = f.al/M.al.modulus + f.glass/M.glass.modulus + f.ss/M.ss.modulus + f.new/(M.new.modulus||0.01);
+  const modulusR  = 1/inv;
+  return { density, tensile, thermalK, cte, absorb, cost_m2, corrosion, modulusV, modulusR };
+}
+
+function evalObjective(f, objKey) {
+  const b = blendProps(f);
+  switch(objKey) {
+    case 'solar':
+      return b.absorb * (1 - 0.08*(b.density/4000)) * Math.pow(b.thermalK/180, 0.15);
+    case 'cost':
+      return 200 - b.cost_m2;   // invert (lower is better → negate)
+    case 'strength':
+      return (b.tensile / b.density) * 1000;
+    case 'thermal':
+      return (b.thermalK/180)*60 + (1 - b.cte/90)*25 + (1 - b.density/8000)*15;
+    case 'balanced': {
+      const SEI = b.absorb * (1 - 0.08*(b.density/4000)) * Math.pow(b.thermalK/180, 0.15);
+      const TMS = (b.thermalK/180)*60 + (1 - b.cte/90)*25 + (1 - b.density/8000)*15;
+      return 0.35*(SEI*100) + 0.30*((200 - b.cost_m2)) + 0.20*TMS + 0.15*(b.tensile/600*100);
+    }
+    case 'lightweight':
+      return b.absorb*50 + ((8000 - b.density)/6000)*30 + (b.tensile/600)*20;
+    case 'marine': {
+      const SEI2 = b.absorb * (1 - 0.08*(b.density/4000)) * Math.pow(b.thermalK/180, 0.15);
+      return b.corrosion*3 + SEI2*40 + (b.thermalK/180)*30;
+    }
+    default: return 0;
+  }
+}
+
+function meetsConstraints(f) {
+  const b = blendProps(f);
+  const maxDen  = parseFloat(document.getElementById('con-density').value) || 0;
+  const minTen  = parseFloat(document.getElementById('con-tensile').value) || 0;
+  const maxCost = parseFloat(document.getElementById('con-cost').value) || 9999;
+  const minAbs  = parseFloat(document.getElementById('con-abs').value) || 0;
+  if (maxDen > 0 && b.density > maxDen) return false;
+  if (b.tensile < minTen) return false;
+  if (b.cost_m2 > maxCost) return false;
+  if (b.absorb < minAbs) return false;
+  return true;
+}
+
+// Grid search: step 5%, enumerate all {al, glass, ss, new} summing to 100
+function gridSearch(objKey, step=5) {
+  const results = [];
+  for (let al=0; al<=100; al+=step) {
+    for (let gl=0; gl<=100-al; gl+=step) {
+      for (let ss=0; ss<=100-al-gl; ss+=step) {
+        const nw = 100 - al - gl - ss;
+        const f = { al:al/100, glass:gl/100, ss:ss/100, new:nw/100 };
+        if (!meetsConstraints(f)) continue;
+        const score = evalObjective(f, objKey);
+        results.push({ f, score, al, gl, ss, nw });
+      }
+    }
+  }
+  results.sort((a,b) => b.score - a.score);
+  return results;
+}
+
+function compoundName(al, gl, ss, nw) {
+  const parts = [];
+  if (al>0) parts.push(`Al(${al}%)`);
+  if (gl>0) parts.push(`Glass(${gl}%)`);
+  if (ss>0) parts.push(`SS(${ss}%)`);
+  if (nw>0) parts.push(`Pvsk(${nw}%)`);
+  return parts.join(' · ');
+}
+
+let optLineChart = null, optParetoChart = null;
+
+function runOptimizer() {
+  const obj = document.getElementById('opt-objective').value;
+  document.getElementById('opt-status').textContent = '⏳ Running grid search (step=5%)…';
+  setTimeout(() => {
+    const results = gridSearch(obj, 5);
+    if (!results.length) {
+      document.getElementById('opt-status').textContent = '⚠ No solution found — relax constraints.';
+      return;
+    }
+    document.getElementById('opt-status').textContent = `✓ Evaluated ${countCombinations(5)} combinations. Top solution found.`;
+    document.getElementById('opt-results-section').style.display='block';
+    renderOptResults(results, obj);
+  }, 80);
+}
+
+function countCombinations(step) {
+  let n=0;
+  for(let a=0;a<=100;a+=step) for(let g=0;g<=100-a;g+=step) for(let s=0;s<=100-a-g;s+=step) n++;
+  return n;
+}
+
+function renderOptResults(results, objKey) {
+  const best = results[0];
+  const bprops = blendProps(best.f);
+  const objInfo = OBJ_DESCRIPTIONS[objKey];
+
+  // Compound name
+  document.getElementById('opt-compound-name').textContent = compoundName(best.al, best.gl, best.ss, best.nw);
+  document.getElementById('opt-score-val').textContent = best.score.toFixed(3);
+
+  // Ratio bars
+  const ratioData = [
+    { label:'Aluminum 6061', pct:best.al, color:'#a8c7fa' },
+    { label:'Borosilicate Glass', pct:best.gl, color:'#93c5fd' },
+    { label:'Stainless Steel 316L', pct:best.ss, color:'#c4b5fd' },
+    { label:'Perovskite', pct:best.nw, color:'#6ee7b7' },
+  ];
+  document.getElementById('opt-ratio-bars').innerHTML = ratioData.map(r=>`
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:160px;font-size:0.78rem;color:${r.color};font-weight:600">${r.label}</div>
+      <div style="flex:1;height:18px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+        <div style="width:${r.pct}%;height:100%;background:${r.color}44;border-right:2px solid ${r.color};transition:width 0.5s ease"></div>
+      </div>
+      <div style="width:48px;font-family:monospace;font-weight:800;color:${r.color};text-align:right">${r.pct}%</div>
+    </div>`).join('');
+
+  // Step-by-step calculation
+  const steps = buildSteps(best.f, bprops, objKey, best.score);
+  document.getElementById('opt-steps').innerHTML = steps.map(s=>
+    `<div style="padding:4px 10px;background:rgba(255,255,255,0.025);border-left:3px solid ${s.color||'var(--border)'};border-radius:0 4px 4px 0">
+       <span style="color:${s.color||'var(--muted)'}">STEP ${s.step}.</span>
+       <span style="color:var(--muted)"> ${s.desc}</span><br>
+       <span style="color:var(--text)">&nbsp;&nbsp;&nbsp;&nbsp;${s.expr}</span>
+       <span style="color:#6ee7b7;margin-left:12px">→ ${s.result}</span>
+     </div>`).join('');
+
+  // Property tiles
+  const tiles = [
+    { label:'Density',       val: bprops.density.toFixed(0),    unit:'kg/m³',   color:'#a8c7fa' },
+    { label:'Thermal K',     val: bprops.thermalK.toFixed(2),   unit:'W/m·K',   color:'#f59e0b' },
+    { label:'Absorptance',   val: (bprops.absorb*100).toFixed(1),unit:'%',      color:'#6ee7b7' },
+    { label:'Tensile Str.',  val: bprops.tensile.toFixed(0),    unit:'MPa',     color:'#c4b5fd' },
+    { label:'Cost (¥/m²)',   val: bprops.cost_m2.toFixed(0),    unit:'CNY/m²',  color:'#93c5fd' },
+    { label:'CTE',           val: bprops.cte.toFixed(1),        unit:'×10⁻⁶/°C',color:'#fb923c' },
+    { label:'E (Voigt)',     val: bprops.modulusV.toFixed(1),   unit:'GPa',     color:'#8b5cf6' },
+    { label:'Corrosion',     val: bprops.corrosion.toFixed(1),  unit:'/10',     color:'#10b981' },
+  ];
+  document.getElementById('opt-prop-tiles').innerHTML = tiles.map(t=>`
+    <div class="metric-tile">
+      <div class="val" style="color:${t.color};font-size:1.25rem">${t.val}</div>
+      <div class="lbl">${t.label}</div>
+      <div class="unit">${t.unit}</div>
+    </div>`).join('');
+
+  // Line chart: Al% sweep
+  const xPts = [], yPts = [];
+  for (let al=0; al<=100; al+=5) {
+    const rem = 100 - al;
+    const f = { al:al/100, glass:(rem*0.5)/100, ss:(rem*0.3)/100, new:(rem*0.2)/100 };
+    xPts.push(al + '%');
+    yPts.push(meetsConstraints(f) ? evalObjective(f,objKey) : null);
+  }
+  if (optLineChart) optLineChart.destroy();
+  optLineChart = new Chart(document.getElementById('chartOptLine'), {
+    type:'line',
+    data:{ labels:xPts, datasets:[{
+      label:`${objInfo.title}`, data:yPts,
+      borderColor:objInfo.color, backgroundColor:objInfo.color+'22', fill:true, tension:0.4,
+      pointBackgroundColor: yPts.map(v=>v===best.score?'#fff':objInfo.color),
+      pointRadius: yPts.map(v=>v===best.score?8:3)
+    }]},
+    options:{ ...chartDefaults, plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}} } }
+  });
+
+  // Pareto front
+  const paretoData = results.slice(0,80).map(r=>({
+    x: blendProps(r.f).cost_m2,
+    y: evalObjective(r.f,'solar'),
+    al:r.al, gl:r.gl, ss:r.ss, nw:r.nw
+  }));
+  if (optParetoChart) optParetoChart.destroy();
+  optParetoChart = new Chart(document.getElementById('chartPareto'), {
+    type:'scatter',
+    data:{ datasets:[{
+      label:'Candidate Compounds',
+      data: paretoData,
+      backgroundColor: paretoData.map((_,i)=>i===0?'#6ee7b7cc':objInfo.color+'55'),
+      borderColor: paretoData.map((_,i)=>i===0?'#6ee7b7':objInfo.color+'99'),
+      pointRadius: paretoData.map((_,i)=>i===0?10:4),
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}}, tooltip:{callbacks:{label:(ctx)=>`Al:${paretoData[ctx.dataIndex].al}% Gl:${paretoData[ctx.dataIndex].gl}% SS:${paretoData[ctx.dataIndex].ss}% Pvsk:${paretoData[ctx.dataIndex].nw}%`}} },
+      scales:{
+        x:{title:{display:true,text:'Cost ¥/m² →',color:'#64748b',font:{size:10}},ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{title:{display:true,text:'Solar Efficiency Index →',color:'#64748b',font:{size:10}},ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}}
+      }
+    }
+  });
+
+  // Top 10 table
+  document.getElementById('opt-top-table').innerHTML = `
+    <thead><tr><th>Rank</th><th>Compound Formula</th><th>Al%</th><th>Glass%</th><th>SS%</th><th>Pvsk%</th><th>Score</th><th>Density</th><th>Cost ¥/m²</th><th>Absorb.</th></tr></thead>
+    <tbody>` +
+    results.slice(0,10).map((r,i) => {
+      const b = blendProps(r.f);
+      return `<tr>
+        <td style="font-weight:800;color:${i===0?'#6ee7b7':'var(--muted)'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</td>
+        <td style="font-family:monospace;font-size:0.75rem;color:${i===0?'#6ee7b7':'var(--text)'}">${compoundName(r.al,r.gl,r.ss,r.nw)}</td>
+        <td style="font-family:monospace;color:#a8c7fa">${r.al}</td>
+        <td style="font-family:monospace;color:#93c5fd">${r.gl}</td>
+        <td style="font-family:monospace;color:#c4b5fd">${r.ss}</td>
+        <td style="font-family:monospace;color:#6ee7b7">${r.nw}</td>
+        <td style="font-family:monospace;font-weight:700;color:${i===0?'#6ee7b7':'var(--text)'}">${r.score.toFixed(3)}</td>
+        <td style="font-family:monospace">${b.density.toFixed(0)}</td>
+        <td style="font-family:monospace">¥${b.cost_m2.toFixed(0)}</td>
+        <td style="font-family:monospace">${(b.absorb*100).toFixed(1)}%</td>
+      </tr>`;}).join('') + '</tbody>';
+}
+
+function buildSteps(f, b, objKey, score) {
+  const M = MATERIALS;
+  const obj = OBJ_DESCRIPTIONS[objKey];
+  const steps = [];
+  steps.push({ step:1, desc:'Define composition fractions (must sum to 1.0)', color:'#00d4ff',
+    expr:`x_Al=${f.al.toFixed(2)}, x_Glass=${f.glass.toFixed(2)}, x_SS=${f.ss.toFixed(2)}, x_Pvsk=${f.new.toFixed(2)}`,
+    result:`Σxᵢ = ${(f.al+f.glass+f.ss+f.new).toFixed(2)} ✓` });
+  steps.push({ step:2, desc:'Rule of Mixtures — Density  ρ_blend = Σ(xᵢ·ρᵢ)', color:'#a8c7fa',
+    expr:`${f.al.toFixed(2)}×${M.al.density} + ${f.glass.toFixed(2)}×${M.glass.density} + ${f.ss.toFixed(2)}×${M.ss.density} + ${f.new.toFixed(2)}×${M.new.density}`,
+    result:`ρ_blend = ${b.density.toFixed(0)} kg/m³` });
+  steps.push({ step:3, desc:'Rule of Mixtures — Thermal Conductivity  k = Σ(xᵢ·kᵢ)  [Voigt]', color:'#f59e0b',
+    expr:`${f.al.toFixed(2)}×${M.al.thermalK} + ${f.glass.toFixed(2)}×${M.glass.thermalK} + ${f.ss.toFixed(2)}×${M.ss.thermalK} + ${f.new.toFixed(2)}×${M.new.thermalK}`,
+    result:`k_blend = ${b.thermalK.toFixed(3)} W/m·K` });
+  steps.push({ step:4, desc:'Weighted Average — Absorptance  α = Σ(xᵢ·αᵢ)', color:'#6ee7b7',
+    expr:`${f.al.toFixed(2)}×${M.al.absorptance} + ${f.glass.toFixed(2)}×${M.glass.absorptance} + ${f.ss.toFixed(2)}×${M.ss.absorptance} + ${f.new.toFixed(2)}×${M.new.absorptance}`,
+    result:`α_blend = ${b.absorb.toFixed(4)}` });
+  steps.push({ step:5, desc:'Tensile Strength  σ = Σ(xᵢ·σᵢ)  [Voigt upper bound]', color:'#c4b5fd',
+    expr:`${f.al.toFixed(2)}×${M.al.tensile} + ${f.glass.toFixed(2)}×${M.glass.tensile} + ${f.ss.toFixed(2)}×${M.ss.tensile} + ${f.new.toFixed(2)}×${M.new.tensile}`,
+    result:`σ_blend = ${b.tensile.toFixed(1)} MPa` });
+  steps.push({ step:6, desc:`Evaluate objective: ${obj.title}`, color:obj.color,
+    expr: obj.formula,
+    result:`Score = ${score.toFixed(4)}` });
+  steps.push({ step:7, desc:'Constraint verification', color:'#10b981',
+    expr:`ρ≤${document.getElementById('con-density').value||'∞'}  σ≥${document.getElementById('con-tensile').value}MPa  Cost≤¥${document.getElementById('con-cost').value}  α≥${document.getElementById('con-abs').value}`,
+    result:`${b.density.toFixed(0)}kg/m³ ✓  ${b.tensile.toFixed(0)}MPa ✓  ¥${b.cost_m2.toFixed(0)} ✓  ${(b.absorb*100).toFixed(1)}% ✓` });
+  return steps;
+}
+
+function updateObjectiveDescription() {
+  const key = document.getElementById('opt-objective').value;
+  const o = OBJ_DESCRIPTIONS[key];
+  document.getElementById('obj-description').innerHTML = `
+    <div class="title" style="color:${o.color}">${o.title}</div>
+    <div style="font-family:monospace;font-size:0.8rem;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:6px;margin:8px 0;color:${o.color}">${o.formula}</div>
+    <div style="font-size:0.77rem;color:var(--muted);line-height:1.6">${o.desc}</div>`;
+  liveOptimize();
+}
+
+function liveOptimize() {
+  // silent update — don't show full results, just update status
+  document.getElementById('opt-status').textContent = '↻ Constraints changed — click Optimize to recalculate.';
+}
+
+function runPareto() {
+  // Generate cost vs solar pareto with fine step
+  document.getElementById('opt-status').textContent = '⏳ Generating Pareto front…';
+  setTimeout(() => {
+    runOptimizer();
+    document.getElementById('opt-status').textContent = `✓ Pareto front generated.`;
+  }, 100);
+}
+
+function buildFormulaDisplay() {
+  document.getElementById('formula-display').innerHTML = `
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div>
+    <div style="color:#00d4ff;font-weight:700;margin-bottom:6px">■ MIXING LAWS</div>
+    <div style="color:var(--muted)">1. Linear Rule of Mixtures (Voigt — upper bound):</div>
+    <div style="color:#e2e8f0;padding:4px 0 8px 12px">P_blend = Σ xᵢ·Pᵢ</div>
+    <div style="color:var(--muted)">2. Reuss Model (lower bound — series):</div>
+    <div style="color:#e2e8f0;padding:4px 0 8px 12px">1/P_blend = Σ (xᵢ/Pᵢ)</div>
+    <div style="color:var(--muted)">3. Density (always linear ROM):</div>
+    <div style="color:#e2e8f0;padding:4px 0 8px 12px">ρ = x_Al·2700 + x_G·2230 + x_SS·7990 + x_P·4160  [kg/m³]</div>
+    <div style="color:var(--muted)">4. Thermal conductivity (Voigt):</div>
+    <div style="color:#e2e8f0;padding:4px 0 8px 12px">k = x_Al·167 + x_G·1.13 + x_SS·16.3 + x_P·0.5  [W/m·K]</div>
+    <div style="color:var(--muted)">5. Absorptance (linear):</div>
+    <div style="color:#e2e8f0;padding:4px 0 8px 12px">α = x_Al·0.15 + x_G·0.04 + x_SS·0.40 + x_P·0.92</div>
+  </div>
+  <div>
+    <div style="color:#7c3aed;font-weight:700;margin-bottom:6px">■ OBJECTIVE FUNCTIONS</div>
+    <div style="color:var(--muted)">Solar Efficiency Index:</div>
+    <div style="color:#f59e0b;padding:4px 0 8px 12px">SEI = α_blend × [1 − 0.08·(ρ/4000)] × (k/180)^0.15</div>
+    <div style="color:var(--muted)">Specific Strength:</div>
+    <div style="color:#a8c7fa;padding:4px 0 8px 12px">SS = σ_blend / ρ_blend × 1000  [kN·m/kg]</div>
+    <div style="color:var(--muted)">Thermal Management Score:</div>
+    <div style="color:#00d4ff;padding:4px 0 8px 12px">TMS = (k/180)×60 + (1−CTE/90)×25 + (1−ρ/8000)×15</div>
+    <div style="color:var(--muted)">Balanced Panel Score:</div>
+    <div style="color:#7c3aed;padding:4px 0 8px 12px">BPS = 0.35·SEI×100 + 0.30·(200−Cost) + 0.20·TMS + 0.15·(σ/600×100)</div>
+    <div style="color:var(--muted)">Constraints: ρ ≤ ρ_max, σ ≥ σ_min, Cost ≤ C_max, α ≥ α_min</div>
+  </div>
+</div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL 6: COST & MANUFACTURING — CHINA
+// ══════════════════════════════════════════════════
+const CHINA_COST = {
+  al: {
+    name:'Aluminum 6061',
+    cny_per_kg: 22.5,          // ¥/kg LME + fabrication premium
+    usd_per_kg: 3.10,
+    cny_per_m2: 48,            // extruded frame per m² panel
+    mfg_city: 'Guangdong / Jiangsu',
+    mfg_hub: 'China South Aluminium (CHALCO), Nanshan Aluminium',
+    lead_time_days: 21,
+    moc_kg: 500,               // min order
+    tariff_pct: 0,             // domestic
+    notes: 'Abundant domestic supply. LME-linked pricing. Anodising adds ¥3–6/kg.',
+    mfg_breakdown: { material:38, labor:18, energy:14, overhead:15, profit:15 },
+    color: '#a8c7fa'
+  },
+  glass: {
+    name:'Low-Iron Glass (3.2mm)',
+    cny_per_kg: 6.8,
+    usd_per_kg: 0.94,
+    cny_per_m2: 32,            // 3.2mm AR-coated
+    mfg_city: 'Shandong / Hebei',
+    mfg_hub: 'Xinyi Solar, Flat Glass Group, CSG Holding',
+    lead_time_days: 14,
+    moc_kg: 2000,
+    tariff_pct: 0,
+    notes: 'China produces ~70% of global solar glass. AR coating adds ¥4–8/m². Overcapacity drives low prices.',
+    mfg_breakdown: { material:28, labor:12, energy:28, overhead:18, profit:14 },
+    color: '#93c5fd'
+  },
+  ss: {
+    name:'Stainless Steel 316L',
+    cny_per_kg: 38.0,
+    usd_per_kg: 5.25,
+    cny_per_m2: 95,            // sheet/hardware per m²
+    mfg_city: 'Fujian / Zhejiang (Wenzhou)',
+    mfg_hub: 'TISCO (Taiyuan), Baoshan Iron & Steel (Baosteel)',
+    lead_time_days: 28,
+    moc_kg: 1000,
+    tariff_pct: 0,
+    notes: 'Mo content drives premium over 304. Marine-grade. Wenzhou specialises in SS fasteners for PV mounting.',
+    mfg_breakdown: { material:55, labor:14, energy:12, overhead:11, profit:8 },
+    color: '#c4b5fd'
+  },
+  new: {
+    name:'Perovskite Layer (ink)',
+    cny_per_kg: 1200,
+    usd_per_kg: 165,
+    cny_per_m2: 18,            // thin-film — very thin, low mass
+    mfg_city: 'Suzhou / Wuhan (R&D clusters)',
+    mfg_hub: 'Microquanta Semiconductor, GCL Perovskite, Longi Green',
+    lead_time_days: 60,
+    moc_kg: 5,
+    tariff_pct: 0,
+    notes: 'Pre-commercial. Pb-based → potential REACH/RoHS restrictions on EU export. Pb-free alternatives +40% cost.',
+    mfg_breakdown: { material:45, labor:20, energy:8, overhead:15, profit:12 },
+    color: '#6ee7b7'
+  }
+};
+
+const CNY_USD = 7.25; // approx exchange rate
+
+function initCostPanel() {
+  // KPI strip
+  const kpis = [
+    { icon:'🏭', label:'China Solar Mfg Share', val:'~80%', unit:'global capacity', color:'#f59e0b' },
+    { icon:'💴', label:'Avg Panel Cost (China)', val:'¥780', unit:'per m² (2025 est.)', color:'#a8c7fa' },
+    { icon:'📦', label:'Al Frame Cost Share', val:'8–12%', unit:'of total panel BOM', color:'#93c5fd' },
+    { icon:'🌡', label:'Glass Cost Share', val:'6–10%', unit:'of total panel BOM', color:'#6ee7b7' },
+  ];
+  document.getElementById('cost-kpis').innerHTML = kpis.map(k=>`
+    <div class="metric-tile">
+      <div style="font-size:1.5rem;margin-bottom:6px">${k.icon}</div>
+      <div class="val" style="color:${k.color};font-size:1.4rem">${k.val}</div>
+      <div class="lbl">${k.label}</div>
+      <div class="unit">${k.unit}</div>
+    </div>`).join('');
+
+  // Material cost cards
+  document.getElementById('cost-cards').innerHTML = Object.values(CHINA_COST).map(c=>`
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:700;color:${c.color}">${c.name}</span>
+        <span style="font-size:0.7rem;color:var(--muted)">${c.mfg_city}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
+        <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;font-family:monospace;color:${c.color}">¥${c.cny_per_kg}</div><div style="font-size:0.65rem;color:var(--muted)">CNY/kg</div></div>
+        <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;font-family:monospace;color:${c.color}">$${c.usd_per_kg}</div><div style="font-size:0.65rem;color:var(--muted)">USD/kg</div></div>
+        <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;font-family:monospace;color:${c.color}">¥${c.cny_per_m2}</div><div style="font-size:0.65rem;color:var(--muted)">CNY/m²</div></div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);line-height:1.5">${c.notes}</div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:0.67rem;background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;color:var(--muted)">⏱ Lead: ${c.lead_time_days}d</span>
+        <span style="font-size:0.67rem;background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;color:var(--muted)">📦 MOQ: ${c.moc_kg}kg</span>
+        <span style="font-size:0.67rem;background:rgba(16,185,129,0.1);padding:2px 8px;border-radius:4px;color:var(--success)">${c.mfg_hub.split(',')[0].trim()}</span>
+      </div>
+    </div>`).join('');
+
+  // Cost bar chart
+  new Chart(document.getElementById('chartCostBar'), {
+    type:'bar',
+    data:{
+      labels: Object.values(CHINA_COST).map(c=>c.name.split(' ').slice(0,2).join(' ')),
+      datasets:[
+        { label:'CNY/kg', data: Object.values(CHINA_COST).map(c=>c.cny_per_kg), backgroundColor: Object.values(CHINA_COST).map(c=>c.color+'44'), borderColor: Object.values(CHINA_COST).map(c=>c.color), borderWidth:2, yAxisID:'y' },
+        { label:'USD/kg', data: Object.values(CHINA_COST).map(c=>c.usd_per_kg), backgroundColor: Object.values(CHINA_COST).map(c=>c.color+'22'), borderColor: Object.values(CHINA_COST).map(c=>c.color), borderWidth:1, borderDash:[4,4], type:'line', yAxisID:'y1' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:11}}} },
+      scales:{
+        x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'},title:{display:true,text:'¥ CNY/kg',color:'#64748b',font:{size:10}}},
+        y1:{type:'linear',position:'right',ticks:{color:'#64748b'},grid:{display:false},title:{display:true,text:'$ USD/kg',color:'#64748b',font:{size:10}}}
+      }
+    }
+  });
+
+  // Manufacturing cost breakdown stacked bar
+  const mfgLabels = ['Material','Labor','Energy','Overhead','Profit'];
+  const mfgColors = ['#00d4ff','#f59e0b','#ef4444','#8b5cf6','#10b981'];
+  const mats = Object.values(CHINA_COST);
+  new Chart(document.getElementById('chartMfgStack'), {
+    type:'bar',
+    data:{
+      labels: mats.map(c=>c.name.split(' ').slice(0,2).join(' ')),
+      datasets: mfgLabels.map((lbl,i)=>({
+        label:lbl,
+        data: mats.map(m=>Object.values(m.mfg_breakdown)[i]),
+        backgroundColor: mfgColors[i]+'88',
+        borderColor: mfgColors[i],
+        borderWidth:1
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:10}}}, title:{display:true,text:'% of manufacturing cost',color:'#64748b',font:{size:10}} },
+      scales:{
+        x:{stacked:true,ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{stacked:true,ticks:{color:'#64748b',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.05)'}}
+      }
+    }
+  });
+
+  // Cost vs performance scatter
+  new Chart(document.getElementById('chartCostPerf'), {
+    type:'scatter',
+    data:{
+      datasets: Object.values(CHINA_COST).map(c=>({
+        label:c.name.split(' ').slice(0,2).join(' '),
+        data:[{
+          x: c.cny_per_m2,
+          y: Object.values(MATERIALS).find(m=>m.id===c.name.split(' ')[0].toLowerCase().slice(0,2)==='pe'?'new':c.name.toLowerCase().includes('alum')?'al':c.name.toLowerCase().includes('glass')?'glass':'ss')?.tensile || 300
+        }],
+        backgroundColor:c.color+'99', borderColor:c.color, pointRadius:12, pointHoverRadius:16
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#94a3b8',font:{size:11}}} },
+      scales:{
+        x:{title:{display:true,text:'Cost (¥/m²) →',color:'#64748b',font:{size:10}},ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{title:{display:true,text:'Tensile Strength (MPa) →',color:'#64748b',font:{size:10}},ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.05)'}}
+      }
+    }
+  });
+
+  // Supply chain table
+  const supplyData = [
+    { mat:'Aluminum Frame', city:'Guangdong, Jiangsu', spec:'6061-T5 Anodised', lead:'21d', price:'¥22–26/kg', export:'Anti-dumping duty (EU/US)', key:'CHALCO, Nanshan, Zhongwang' },
+    { mat:'Low-Iron Glass', city:'Shandong, Hebei', spec:'3.2mm AR-coated, ≥91.5% Tvis', lead:'14d', price:'¥30–36/m²', export:'US tariff Section 201/301', key:'Xinyi Solar, Flat Glass, CSG' },
+    { mat:'SS 316L Sheet', city:'Fujian (Qingshan), Wenzhou', spec:'2B finish, 0.8–2mm', lead:'28d', price:'¥36–42/kg', export:'Low restrictions', key:'TISCO, Baosteel, Delong' },
+    { mat:'Perovskite Ink', city:'Suzhou, Wuhan', spec:'MAPbI₃ / Pb-free alternatives', lead:'60d', price:'¥1100–1300/kg', export:'RoHS Pb restrictions in EU', key:'Microquanta, GCL, Longi' },
+    { mat:'EVA Encapsulant', city:'Jiangsu, Shanghai', spec:'0.45mm, ≥90% UV Tvis', lead:'10d', price:'¥8–12/m²', export:'Standard', key:'Hangzhou First Applied, STR' },
+    { mat:'Backsheet', city:'Suzhou, Shenzhen', spec:'KPF/TPE composite', lead:'10d', price:'¥12–18/m²', export:'Standard', key:'Coveme, Jolywood, Cybrid' },
+  ];
+  document.getElementById('supply-table').innerHTML = `
+    <thead><tr>
+      <th>Material</th><th>China Hub</th><th>Specification</th>
+      <th>Lead Time</th><th>Price Range</th><th>Key Suppliers</th><th>Export Note</th>
+    </tr></thead><tbody>` +
+  supplyData.map(r=>`<tr>
+    <td style="font-weight:600;color:var(--text)">${r.mat}</td>
+    <td style="color:var(--muted);font-size:0.78rem">${r.city}</td>
+    <td style="font-size:0.75rem;color:#93c5fd;font-family:monospace">${r.spec}</td>
+    <td style="font-family:monospace;color:#f59e0b">${r.lead}</td>
+    <td style="font-family:monospace;color:#6ee7b7">${r.price}</td>
+    <td style="font-size:0.75rem;color:var(--muted)">${r.key}</td>
+    <td style="font-size:0.72rem;color:${r.export.includes('tariff')||r.export.includes('duty')||r.export.includes('RoHS')?'#ef4444':'var(--muted)'}">${r.export}</td>
+  </tr>`).join('') + '</tbody>';
+
+  calcPanelCost();
+}
+
+function calcPanelCost() {
+  const area = parseFloat(document.getElementById('calc-area').value) || 1.96;
+  const qty  = parseInt(document.getElementById('calc-qty').value) || 1000;
+  const frame = document.getElementById('calc-frame').value;
+
+  const glassCost  = CHINA_COST.glass.cny_per_m2 * area;
+  const frameCost  = frame==='al' ? CHINA_COST.al.cny_per_m2 * area : CHINA_COST.ss.cny_per_m2 * area;
+  const cellCost   = 180 * area;   // typical Si cell ~¥180/m²
+  const encapCost  = 10 * area;
+  const backsheetCost = 15 * area;
+  const jboxWiring = 25;
+  const labor      = 35;
+  const overhead   = 20;
+  const total      = glassCost + frameCost + cellCost + encapCost + backsheetCost + jboxWiring + labor + overhead;
+  const totalUSD   = total / CNY_USD;
+  const perWatt    = total / (400 * area); // assume 400W/m²
+
+  const results = [
+    { label:'BOM Total (per panel)', val:'¥'+total.toFixed(0), sub:'$'+totalUSD.toFixed(1), color:'#00d4ff' },
+    { label:`${frame==='al'?'Al':'SS'} Frame Cost`, val:'¥'+frameCost.toFixed(0), sub:((frameCost/total*100).toFixed(1)+'% of BOM'), color: frame==='al'?'#a8c7fa':'#c4b5fd' },
+    { label:'Glass Cost', val:'¥'+glassCost.toFixed(0), sub:((glassCost/total*100).toFixed(1)+'% of BOM'), color:'#93c5fd' },
+    { label:'Cost per Watt', val:'¥'+perWatt.toFixed(2)+'/W', sub:'$'+(perWatt/CNY_USD).toFixed(3)+'/W', color:'#6ee7b7' },
+    { label:'Batch Total (×'+qty+')', val:'¥'+(total*qty/1000).toFixed(0)+'K', sub:'$'+(totalUSD*qty/1000).toFixed(0)+'K', color:'#f59e0b' },
+    { label:'Glass vs Frame Ratio', val: (glassCost/frameCost).toFixed(2)+'×', sub:'glass is cheaper', color:'#10b981' },
+  ];
+  document.getElementById('calc-results').innerHTML = results.slice(0,4).map(r=>`
+    <div class="metric-tile">
+      <div class="val" style="color:${r.color};font-size:1.3rem">${r.val}</div>
+      <div class="lbl">${r.label}</div>
+      <div class="unit">${r.sub}</div>
+    </div>`).join('') +
+    `<div class="metric-tile" style="grid-column:span 2">
+      <div class="val" style="color:#f59e0b;font-size:1.3rem">${results[4].val}</div>
+      <div class="lbl">${results[4].label}</div>
+      <div class="unit">${results[4].sub}</div>
+    </div>
+    <div class="metric-tile" style="grid-column:span 2">
+      <div class="val" style="color:#10b981;font-size:1.3rem">${results[5].val}</div>
+      <div class="lbl">${results[5].label}</div>
+      <div class="unit">${results[5].sub}</div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  buildMaterialCards();
+  initCharts();
+  initMixerCharts();   // calls setMixFamily('al') → renderPresets + renderElemSliders + updateMixer
+  initSolarPanel();
+  buildCompareTable();
+  initCostPanel();
+  buildFormulaDisplay();
+  updateObjectiveDescription();
+});
+</script>
+</body>
+</html>
