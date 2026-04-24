@@ -280,6 +280,7 @@
   <div class="tab" onclick="showTab('cost',this)"><span class="tab-icon">🏭</span>Cost & Mfg (China)</div>
   <div class="tab" onclick="showTab('optimizer',this)"><span class="tab-icon">⚙️</span><span data-i18n='tab_optimizer'>Optimizer</span></div>
         <div class="tab" onclick="launchFullscreen(this)" id="fs-tab" data-i18n="tab_fullscreen">⛶ Fullscreen</div>
+        <div class="tab" onclick="showTab('perf',this)" data-i18n="tab_perf">🎯 Performance Index</div>
 </div>
 
 <div class="main">
@@ -699,6 +700,58 @@
       </div>
     </div>
   </div>
+
+
+  <!-- ═══ PERFORMANCE INDEX PANEL ═══════════════════════════════════ -->
+  <div id="panel-perf" class="panel" style="padding:20px">
+
+    <div class="card-title" style="font-size:1.1rem;margin-bottom:4px">🎯 <span data-i18n="perf_title">Performance Index Optimizer</span></div>
+    <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:18px" data-i18n="perf_sub">Rate 5 performance axes — find the best material or ideal alloy ratio for your goal.</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px">
+      <div class="card" style="padding:16px">
+        <div class="card-title" style="font-size:0.85rem;margin-bottom:12px" data-i18n="perf_presets">⚡ Quick Scenarios</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="perf-preset-btns">
+          <button class="btn" style="justify-content:flex-start;padding:9px 14px;font-size:0.82rem" onclick="applyScenario('budget')">🏗 <span data-i18n="sc_budget">Budget Build</span></button>
+          <button class="btn" style="justify-content:flex-start;padding:9px 14px;font-size:0.82rem" onclick="applyScenario('perf')">🏆 <span data-i18n="sc_perf">Max Performance</span></button>
+          <button class="btn" style="justify-content:flex-start;padding:9px 14px;font-size:0.82rem" onclick="applyScenario('marine')">🌊 <span data-i18n="sc_marine">Marine / Coastal</span></button>
+          <button class="btn" style="justify-content:flex-start;padding:9px 14px;font-size:0.82rem" onclick="applyScenario('light')">🏔 <span data-i18n="sc_light">Lightweight</span></button>
+          <button class="btn" style="justify-content:flex-start;padding:9px 14px;font-size:0.82rem" onclick="applyScenario('solar')">☀️ <span data-i18n="sc_solar">Solar Optimized</span></button>
+        </div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="card-title" style="font-size:0.85rem;margin-bottom:14px" data-i18n="perf_weights">🎚 Priority Weights (0–10)</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <label style="display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:0.82rem"><span>💰 <span data-i18n="ax_cost">Cost</span></span><input type="range" min="0" max="10" value="5" id="w-cost" oninput="document.getElementById('v-cost').textContent=this.value" style="accent-color:var(--accent)"><span id="v-cost" style="color:var(--accent);font-weight:700;text-align:right">5</span></label>
+          <label style="display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:0.82rem"><span>💪 <span data-i18n="ax_str">Strength</span></span><input type="range" min="0" max="10" value="5" id="w-str" oninput="document.getElementById('v-str').textContent=this.value" style="accent-color:var(--accent2)"><span id="v-str" style="color:var(--accent2);font-weight:700;text-align:right">5</span></label>
+          <label style="display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:0.82rem"><span>🛡 <span data-i18n="ax_corr">Corrosion</span></span><input type="range" min="0" max="10" value="5" id="w-corr" oninput="document.getElementById('v-corr').textContent=this.value" style="accent-color:var(--accent3)"><span id="v-corr" style="color:var(--accent3);font-weight:700;text-align:right">5</span></label>
+          <label style="display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:0.82rem"><span>⚖️ <span data-i18n="ax_wt">Weight</span></span><input type="range" min="0" max="10" value="5" id="w-wt" oninput="document.getElementById('v-wt').textContent=this.value" style="accent-color:var(--accent4)"><span id="v-wt" style="color:var(--accent4);font-weight:700;text-align:right">5</span></label>
+          <label style="display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:0.82rem"><span>☀️ <span data-i18n="ax_solar">Solar</span></span><input type="range" min="0" max="10" value="5" id="w-solar" oninput="document.getElementById('v-solar').textContent=this.value" style="accent-color:#f59e0b"><span id="v-solar" style="color:#f59e0b;font-weight:700;text-align:right">5</span></label>
+          <button class="btn" onclick="runPerfIndex()" style="margin-top:8px;width:100%;justify-content:center;font-size:0.88rem;padding:11px">🔍 <span data-i18n="perf_calc">Calculate Best Match</span></button>
+        </div>
+      </div>
+    </div>
+    <div id="perf-results" style="display:none">
+      <div class="card" style="padding:16px;margin-bottom:18px">
+        <div class="card-title" style="font-size:0.85rem;margin-bottom:12px">📊 <span data-i18n="perf_rank">Material Ranking — All Families</span></div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="compare-table" id="perf-table" style="min-width:600px"></table></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="card" style="padding:16px">
+          <div class="card-title" style="font-size:0.85rem;margin-bottom:10px">🕸 <span data-i18n="perf_radar">Performance Radar — Top Material</span></div>
+          <div style="position:relative;height:260px"><canvas id="perf-radar-chart"></canvas></div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div class="card-title" style="font-size:0.85rem;margin-bottom:10px">🔬 <span data-i18n="perf_hint_title">Composition / Design Hint</span></div>
+          <div id="perf-hint-top" style="color:var(--accent);font-weight:700;font-size:0.9rem;margin-bottom:8px"></div>
+          <div id="perf-hint-body" style="color:var(--text-muted);font-size:0.82rem;line-height:1.65"></div>
+          <div id="perf-hint-params" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </div><!-- end .main -->
 
 <script>
@@ -2278,7 +2331,15 @@ const TRANSLATIONS = {
     tab_library:'Material Library', tab_mixer:'Composition Mixer',
     tab_solar:'Solar Performance',  tab_compare:'Comparison',
     tab_newmat:'New Material Dev',  tab_cost:'Cost & Mfg (China)',
-    tab_optimizer:'Optimizer', tab_fullscreen:'⛶ Fullscreen', fs_title:'Fullscreen Mode', fs_desc:'Enter fullscreen to view the simulator without browser chrome. Use Esc or the exit button below to return.', fs_enter:'Enter Fullscreen', fs_exit:'Exit Fullscreen', fs_tips_title:'💡 Keyboard Shortcuts', fs_tip1:'Toggle fullscreen (browser native)', fs_tip2:'Exit fullscreen',
+    tab_optimizer:'Optimizer', tab_fullscreen:'⛶ Fullscreen', fs_title:'Fullscreen Mode', fs_desc:'Enter fullscreen to view the simulator without browser chrome. Use Esc or the exit button below to return.', fs_enter:'Enter Fullscreen', fs_exit:'Exit Fullscreen', fs_tips_title:'💡 Keyboard Shortcuts', fs_tip1:'Toggle fullscreen (browser native)', fs_tip2:'Exit fullscreen', tab_perf:'🎯 Performance Index', perf_title:'Performance Index Optimizer', perf_sub:'Rate 5 performance axes — find the best material or alloy ratio for your goal.', perf_presets:'⚡ Quick Scenarios', perf_weights:'🎚 Priority Weights (0–10)', perf_calc:'Calculate Best Match', perf_rank:'Material Ranking — All Families', perf_radar:'Performance Radar — Top Material', perf_hint_title:'Composition / Design Hint', ax_cost:'Cost', ax_str:'Strength', ax_corr:'Corrosion', ax_wt:'Weight', ax_solar:'Solar', sc_budget:'Budget Build', sc_perf:'Max Performance', sc_marine:'Marine / Coastal', sc_light:'Lightweight', sc_solar:'Solar Optimized',
+      tab_perf:'🎯 Performance Index',
+      perf_title:'Performance Index Optimizer', perf_sub:'Rate 5 performance axes by importance — find the best material or ideal alloy ratio for your goal.',
+      perf_presets:'⚡ Quick Scenarios', perf_weights:'🎚 Priority Weights (0 – 10)',
+      perf_calc:'Calculate Best Match', perf_rank:'Material Ranking — All Families',
+      perf_radar:'Performance Profile — Top Material', perf_hint_title:'Composition / Design Hint',
+      ax_cost:'Cost', ax_str:'Strength', ax_corr:'Corrosion', ax_wt:'Weight', ax_solar:'Solar',
+      sc_budget:'Budget Build', sc_perf:'Max Performance', sc_marine:'Marine / Coastal',
+      sc_light:'Lightweight', sc_solar:'Solar Optimized',
     sec_library:'Material Property Library',
     sec_mixer:'Elemental Composition Mixer',
     sec_solar:'Solar Panel Performance Analysis',
@@ -2320,7 +2381,14 @@ const TRANSLATIONS = {
     tab_library:'材料库',      tab_mixer:'成分混合器',
     tab_solar:'太阳能性能',   tab_compare:'对比分析',
     tab_newmat:'新材料开发',  tab_cost:'成本与制造（中国）',
-    tab_optimizer:'优化器', tab_fullscreen:'⛶ 全屏', fs_title:'全屏模式', fs_desc:'进入全屏模式以无干扰地查看模拟器。按 Esc 或下方按钮退出全屏。', fs_enter:'进入全屏', fs_exit:'退出全屏', fs_tips_title:'💡 快捷键', fs_tip1:'切换全屏（浏览器原生）', fs_tip2:'退出全屏',
+    tab_optimizer:'优化器', tab_fullscreen:'⛶ 全屏', fs_title:'全屏模式', fs_desc:'进入全屏模式以无干扰地查看模拟器。按 Esc 或下方按钮退出全屏。', fs_enter:'进入全屏', fs_exit:'退出全屏', fs_tips_title:'💡 快捷键', fs_tip1:'切换全屏（浏览器原生）', fs_tip2:'退出全屏', tab_perf:'🎯 性能指数', perf_title:'性能指数优化器', perf_sub:'为5个性能轴设置权重 — 找到最适合目标的材料或合金配比。', perf_presets:'⚡ 快捷场景', perf_weights:'🎚 优先级权重（0–10）', perf_calc:'计算最佳匹配', perf_rank:'材料排名 — 全系列', perf_radar:'性能雷达 — 最佳材料', perf_hint_title:'成分 / 设计建议', ax_cost:'成本', ax_str:'强度', ax_corr:'耐腐蚀', ax_wt:'重量', ax_solar:'光电性能', sc_budget:'经济型', sc_perf:'最高性能', sc_marine:'海洋/沿海', sc_light:'轻量化', sc_solar:'太阳能优化',
+      tab_perf:'🎯 性能指数',
+      perf_title:'性能指数优化器', perf_sub:'为5个性能轴设置重要性权重 — 找到最适合您目标的材料或合金配比。',
+      perf_presets:'⚡ 快捷场景', perf_weights:'🎚 优先级权重（0 – 10）',
+      perf_calc:'计算最佳匹配', perf_rank:'材料排名 — 全系列',
+      perf_radar:'性能雷达图 — 最佳材料', perf_hint_title:'成分 / 设计建议',
+      ax_cost:'成本', ax_str:'强度', ax_corr:'耐腐蚀', ax_wt:'重量', ax_solar:'光电性能',
+      sc_budget:'经济型', sc_perf:'最高性能', sc_marine:'海洋/沿海', sc_light:'轻量化', sc_solar:'太阳能优化',
     sec_library:'材料属性库',
     sec_mixer:'元素成分混合器',
     sec_solar:'太阳能板性能分析',
@@ -2380,6 +2448,162 @@ function setLang(lang) {
   document.title = lang === 'zh'
     ? '太阳能板材料模拟器 — 科学仪表盘'
     : 'Solar Panel Material Simulator — Scientific Dashboard';
+}
+
+
+
+// ════════════════════════════════════════════════════════════════════
+// PERFORMANCE INDEX ENGINE
+// ════════════════════════════════════════════════════════════════════
+const PERF_DATA = [
+  {id:'Al-1050',     fam:'Al',    cost:9.2,str:1.2,corr:8.5,wt:9.6,solar:8.5,desc:'Pure Al — electrical/thermal grade'},
+  {id:'Al-3003',     fam:'Al',    cost:8.5,str:2.5,corr:9.0,wt:9.5,solar:8.8,desc:'Mn-alloy — formability & weldability'},
+  {id:'Al-5052-H32', fam:'Al',    cost:7.8,str:4.0,corr:8.8,wt:9.5,solar:7.5,desc:'Mg-alloy — marine grade'},
+  {id:'Al-6061-T6',  fam:'Al',    cost:7.5,str:5.5,corr:7.0,wt:9.5,solar:8.5,desc:'General-purpose structural Al'},
+  {id:'Al-6063-T5',  fam:'Al',    cost:7.8,str:4.5,corr:7.5,wt:9.5,solar:8.8,desc:'Extrusion grade — standard solar frame'},
+  {id:'Al-2024-T3',  fam:'Al',    cost:6.5,str:7.0,corr:4.0,wt:9.2,solar:6.5,desc:'Aerospace high-strength'},
+  {id:'Al-7075-T6',  fam:'Al',    cost:5.5,str:9.5,corr:3.0,wt:9.2,solar:7.0,desc:'Highest-strength Al alloy'},
+  {id:'SS-304',      fam:'SS',    cost:5.5,str:4.0,corr:5.5,wt:2.8,solar:3.0,desc:'Standard austenitic SS'},
+  {id:'SS-316L',     fam:'SS',    cost:4.0,str:3.5,corr:7.5,wt:2.7,solar:2.8,desc:'Mo-bearing — pitting resistant'},
+  {id:'SS-2205',     fam:'SS',    cost:2.8,str:8.5,corr:8.5,wt:3.0,solar:4.0,desc:'Duplex — strength + corrosion'},
+  {id:'SS-430',      fam:'SS',    cost:6.5,str:6.0,corr:4.5,wt:3.2,solar:5.5,desc:'Ferritic — no Ni, budget grade'},
+  {id:'SS-904L',     fam:'SS',    cost:1.0,str:4.5,corr:9.5,wt:2.7,solar:2.5,desc:'Super-austenitic — max corrosion'},
+  {id:'Glass-Ultra', fam:'Glass', cost:5.0,str:1.5,corr:9.0,wt:8.8,solar:9.5,desc:'Ultra-clear Fe2O3 <0.015%'},
+  {id:'Glass-Float', fam:'Glass', cost:8.5,str:1.0,corr:8.0,wt:8.8,solar:8.5,desc:'Standard float glass'},
+  {id:'Glass-AR',    fam:'Glass', cost:3.5,str:2.0,corr:9.0,wt:8.6,solar:9.8,desc:'Anti-reflection coated'},
+  {id:'Glass-Temp',  fam:'Glass', cost:6.0,str:4.0,corr:8.5,wt:8.8,solar:8.8,desc:'Tempered safety glass'},
+  {id:'Glass-Boro',  fam:'Glass', cost:2.5,str:3.0,corr:9.5,wt:8.5,solar:9.2,desc:'Borosilicate — low thermal expansion'},
+];
+
+const PERF_SCENARIOS = {
+  budget:[9,4,3,4,4], perf:[3,9,5,6,6],
+  marine:[4,5,9,4,5], light:[5,6,4,9,5], solar:[5,4,5,6,9]
+};
+
+const FAM_COLOR  = {Al:'var(--accent)', SS:'var(--accent2)', Glass:'var(--accent3)'};
+const FAM_BADGE  = {Al:'#0e2a38',       SS:'#1a1e38',        Glass:'#0e2e2e'};
+let perfRadarChart = null;
+
+function applyScenario(key) {
+  const w = PERF_SCENARIOS[key];
+  ['cost','str','corr','wt','solar'].forEach((ax,i) => {
+    const el = document.getElementById('w-'+ax);
+    const vl = document.getElementById('v-'+ax);
+    if(el){ el.value=w[i]; vl.textContent=w[i]; }
+  });
+  runPerfIndex();
+}
+
+function runPerfIndex() {
+  const W = ['cost','str','corr','wt','solar'].map(ax =>
+    parseInt(document.getElementById('w-'+ax)?.value||5));
+  const total = W.reduce((a,b)=>a+b,0)||1;
+  const scored = PERF_DATA.map(m => {
+    const axes=[m.cost,m.str,m.corr,m.wt,m.solar];
+    return {...m, score:Math.round(axes.reduce((s,v,i)=>s+v*W[i],0)/total*10)/10, axes};
+  }).sort((a,b)=>b.score-a.score);
+  renderPerfTable(scored, W);
+  renderPerfRadar(scored[0], W);
+  renderPerfHint(scored[0], W);
+  document.getElementById('perf-results').style.display='block';
+}
+
+function renderPerfTable(scored, W) {
+  const icons=['💰','💪','🛡','⚖️','☀️'];
+  const cols=['var(--accent)','var(--accent2)','var(--accent3)','var(--accent4)','#f59e0b'];
+  let h=`<thead><tr><th>#</th><th>Material</th><th>Family</th><th>Score</th>`;
+  icons.forEach((ic,i)=>{ h+=`<th style="color:${cols[i]};opacity:${W[i]>0?1:0.3}">${ic}</th>`; });
+  h+=`<th>Description</th></tr></thead><tbody>`;
+  scored.forEach((m,idx)=>{
+    const medal=idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`${idx+1}`;
+    const fc=FAM_COLOR[m.fam]||'var(--accent)';
+    const bg=idx===0?'background:rgba(0,212,255,0.06)':'';
+    h+=`<tr style="${bg}"><td style="font-size:1rem">${medal}</td>
+      <td style="color:${fc};font-weight:600">${m.id}</td>
+      <td><span style="background:${FAM_BADGE[m.fam]||'#222'};color:${fc};padding:2px 8px;border-radius:10px;font-size:0.74rem">${m.fam}</span></td>
+      <td style="font-weight:700;color:${idx===0?'var(--accent)':'inherit'}">${m.score.toFixed(1)}</td>`;
+    m.axes.forEach((v,i)=>{
+      const b=Math.round(v/2);
+      h+=`<td style="font-family:monospace;font-size:0.75rem;color:${cols[i]};letter-spacing:-1px" title="${v}/10">${'█'.repeat(b)+'░'.repeat(5-b)}</td>`;
+    });
+    h+=`<td style="color:var(--text-muted);font-size:0.78rem">${m.desc}</td></tr>`;
+  });
+  h+='</tbody>';
+  document.getElementById('perf-table').innerHTML=h;
+}
+
+function renderPerfRadar(top, W) {
+  const ctx=document.getElementById('perf-radar-chart').getContext('2d');
+  if(perfRadarChart){ perfRadarChart.destroy(); perfRadarChart=null; }
+  perfRadarChart=new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels:['💰 Cost','💪 Strength','🛡 Corrosion','⚖️ Weight','☀️ Solar'],
+      datasets:[
+        {label:top.id, data:[top.cost,top.str,top.corr,top.wt,top.solar],
+         backgroundColor:'rgba(0,212,255,0.15)',borderColor:'rgba(0,212,255,0.85)',
+         borderWidth:2,pointBackgroundColor:'rgba(0,212,255,1)',pointRadius:4},
+        {label:'Your Priority', data:W,
+         backgroundColor:'rgba(168,85,247,0.10)',borderColor:'rgba(168,85,247,0.65)',
+         borderWidth:1.5,borderDash:[4,3],pointBackgroundColor:'rgba(168,85,247,0.8)',pointRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{r:{min:0,max:10,
+        ticks:{stepSize:2,color:'rgba(255,255,255,0.35)',font:{size:9},backdropColor:'transparent'},
+        grid:{color:'rgba(255,255,255,0.07)'},
+        angleLines:{color:'rgba(255,255,255,0.1)'},
+        pointLabels:{color:'rgba(255,255,255,0.72)',font:{size:11}}
+      }},
+      plugins:{legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:10}}}}
+    }
+  });
+}
+
+function renderPerfHint(top, W) {
+  const axNames=['cost','str','corr','wt','solar'];
+  const axLabels=['Cost','Strength','Corrosion','Weight','Solar'];
+  const icons=['💰','💪','🛡','⚖️','☀️'];
+  const cols=['var(--accent)','var(--accent2)','var(--accent3)','var(--accent4)','#f59e0b'];
+  const maxW=Math.max(...W), topAxis=W.indexOf(maxW);
+  const fc=FAM_COLOR[top.fam]||'var(--accent)';
+  document.getElementById('perf-hint-top').innerHTML=
+    `${icons[topAxis]} Priority: <span style="color:${cols[topAxis]}">${axLabels[topAxis]}</span>`+
+    ` &nbsp;|&nbsp; Top: <span style="color:${fc}">${top.id}</span> (${top.score.toFixed(1)}/10)`;
+  const HINTS={
+    Al:{
+      cost:'Use <b>6063-T5</b> or <b>3003-H14</b> — widest availability, lowest cost premium. Avoid 2xxx/7xxx surcharges. Buy extruded profiles direct from mill.',
+      str:'Increase Zn+Mg+Cu ratio (<b>7xxx series</b>) for max yield. For 6xxx: target Mg:Si ≈ 1.73, apply T6 age at 160°C/8 h. Precipitation hardening adds 100–200 MPa.',
+      corr:'Prefer <b>5xxx series</b> (Mg only, no Cu). Limit Cu &lt;0.1%, Zn &lt;0.5%. Hard anodize 15–25 µm for coastal use. Al-5052 is the most corrosion-resistant structural Al.',
+      wt:'Use <b>1xxx/3xxx series</b> for minimum density (~2.70 g/cm³). Thin-wall extrusions (wall ≥1.2 mm) save weight without sacrificing stiffness.',
+      solar:'Keep alloy additions low to maximise k. Pure Al-1050: 230 W/m·K; 6061-T6: 167 W/m·K. For frame heat dissipation: 1xxx > 3xxx > 5xxx > 6xxx.'
+    },
+    SS:{
+      cost:'Use <b>SS-430 ferritic</b> (no Ni/Mo) for dry/indoor environments — 40% cheaper than 304. Avoid 316L and duplex unless chloride exposure demands it.',
+      str:'Use <b>SS-2205 duplex</b>: yield 450+ MPa vs 205 MPa for 304. Add N 0.15–0.25% for solid-solution strengthening. Cold-work austenitic for extra 20–30%.',
+      corr:'PREN = Cr + 3.3×Mo + 16×N must exceed 40 for marine grade. Raise <b>Mo to 3–4%</b> and <b>N to 0.15–0.20%</b>. 2205 duplex (PREN≈38) or 904L for severe chloride.',
+      wt:'SS is inherently dense (7.7–8.0 g/cm³). Use <b>thin-gauge duplex</b> (half the thickness of austenitic for same load). Consider switching to Al for weight-critical brackets.',
+      solar:'Thermal conductivity: ferritic-430 ≈26 W/m·K > duplex ≈19 W/m·K > austenitic ≈15 W/m·K. Use <b>SS-430</b> or switch to Al for best heat dissipation.'
+    },
+    Glass:{
+      cost:'<b>3.2 mm float glass</b> (Fe₂O₃ ~0.1%) is most cost-effective. AR coating adds 30–50% cost but lifts energy yield 2–4%. ROI over 25 yr typically favours AR.',
+      str:'<b>Thermal tempering</b> at 620–680°C gives 4–5× surface compressive stress (100–200 MPa vs 45 MPa annealed). Min 3.2 mm for IEC 61215 hail test compliance.',
+      corr:'Apply <b>SiO₂/TiO₂ sol-gel coating</b>. Choose low-alkali or borosilicate for high-humidity/acid-rain sites. Self-cleaning TiO₂ coating also reduces soiling losses.',
+      wt:'Reduce to <b>2.5 mm tempered ultra-clear</b> to save ~22% weight. Bifacial rear glass can use 2.0 mm. Thinner glass also improves rear-side light capture.',
+      solar:'Use <b>ultra-clear glass</b> (Fe₂O₃ &lt;0.015%) + double-sided <b>AR coating</b>. Target T &gt;94% at 550 nm. Each 1% transmittance ≈ 1% more power output.'
+    }
+  };
+  document.getElementById('perf-hint-body').innerHTML=HINTS[top.fam]?.[axNames[topAxis]]||'Adjust composition toward the priority axis.';
+  let p='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px">';
+  axNames.forEach((ax,i)=>{
+    const v=top[ax];const b=Math.round(v/2);
+    p+=`<div style="text-align:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 2px">
+      <div style="font-size:0.85rem">${icons[i]}</div>
+      <div style="font-family:monospace;font-size:0.68rem;color:${cols[i]};letter-spacing:-1px">${'█'.repeat(b)+'░'.repeat(5-b)}</div>
+      <div style="font-size:0.7rem;color:var(--text-muted)">${v}/10</div></div>`;
+  });
+  p+='</div>';
+  document.getElementById('perf-hint-params').innerHTML=p;
 }
 
 // ── FULLSCREEN API ─────────────────────────────────────────────────────────
