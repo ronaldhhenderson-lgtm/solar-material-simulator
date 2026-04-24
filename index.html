@@ -279,6 +279,7 @@
   <div class="tab" onclick="showTab('newmat',this)"><span class="tab-icon">🔬</span><span data-i18n='tab_newmat'>New Material Dev</span></div>
   <div class="tab" onclick="showTab('cost',this)"><span class="tab-icon">🏭</span>Cost & Mfg (China)</div>
   <div class="tab" onclick="showTab('optimizer',this)"><span class="tab-icon">⚙️</span><span data-i18n='tab_optimizer'>Optimizer</span></div>
+        <div class="tab" onclick="launchFullscreen(this)" id="fs-tab" data-i18n="tab_fullscreen">⛶ Fullscreen</div>
 </div>
 
 <div class="main">
@@ -671,6 +672,33 @@
   </div>
 </div>
 
+
+  <!-- ── FULLSCREEN PANEL ─────────────────────────────────────── -->
+  <div id="panel-fullscreen" class="panel" style="padding:20px">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:28px;text-align:center">
+      <div style="font-size:4rem">⛶</div>
+      <h2 style="color:var(--accent);font-size:1.6rem;margin:0" data-i18n="fs_title">Fullscreen Mode</h2>
+      <p style="color:var(--text-muted);max-width:420px;line-height:1.6" data-i18n="fs_desc">
+        Enter fullscreen to view the simulator without browser chrome. Use Esc or the exit button below to return.
+      </p>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+        <button class="btn" onclick="enterFullscreen()" style="font-size:1rem;padding:14px 32px">
+          <span>⛶</span> <span data-i18n="fs_enter">Enter Fullscreen</span>
+        </button>
+        <button class="btn" onclick="exitFullscreen()" style="font-size:1rem;padding:14px 32px;background:rgba(255,255,255,0.07)">
+          <span>✕</span> <span data-i18n="fs_exit">Exit Fullscreen</span>
+        </button>
+      </div>
+      <div id="fs-status" style="color:var(--text-muted);font-size:0.82rem;margin-top:8px"></div>
+      <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px 28px;max-width:480px;text-align:left">
+        <div style="color:var(--accent);font-weight:700;margin-bottom:10px" data-i18n="fs_tips_title">💡 Keyboard Shortcuts</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:0.85rem">
+          <span style="color:var(--accent);font-family:monospace">F11</span><span data-i18n="fs_tip1">Toggle fullscreen (browser native)</span>
+          <span style="color:var(--accent);font-family:monospace">Esc</span><span data-i18n="fs_tip2">Exit fullscreen</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div><!-- end .main -->
 
 <script>
@@ -954,17 +982,17 @@ function calcAl(e) {
   const iacs = Math.max(1, 61 - 1.6*(e.Cu||0) - 4.5*(e.Mg||0) - 1.0*(e.Si||0)
                          - 4.0*(e.Mn||0) - 0.8*(e.Zn||0) - 1.5*(e.Cr||0));
   // Thermal conductivity (Wiedemann-Franz approx)
-  const thermalK = 160 * (iacs/61);
+  const thermalK = 185 * (iacs/61);
   // Yield strength: base + solid solution + precipitation
   const ss_Mg = 25*(e.Mg||0);
   const ss_Cu = 30*(e.Cu||0);
   const ss_Zn = 18*(e.Zn||0);
   const ss_Si = 8*(e.Si||0);
-  const precip_6xxx = ((e.Mg||0)>0.5 && (e.Si||0)>0.3) ? 70 + 60*(e.Mg||0)*(e.Si||0)/((e.Mg||0)+(e.Si||0)) : 0;
+  const precip_6xxx = ((e.Mg||0)>0.5 && (e.Si||0)>0.3) ? 160 + 120*(e.Mg||0)*(e.Si||0)/((e.Mg||0)+(e.Si||0)) : 0;
   const precip_2xxx = (e.Cu||0)>1 ? 80*(e.Cu||0) : 0;
   const precip_7xxx = ((e.Zn||0)>2 && (e.Mg||0)>1) ? 100 + 40*(e.Zn||0) : 0;
   const yieldStr = 40 + ss_Mg + ss_Cu + ss_Zn + ss_Si + precip_6xxx + precip_2xxx + precip_7xxx;
-  const tensile = yieldStr * (1.4 - 0.05*((e.Cu||0)+(e.Mg||0)));
+  const tensile = yieldStr * (1.15 - 0.02*((e.Cu||0)+(e.Mg||0)));
   const hardness = tensile * 0.3;
   // Corrosion resistance (1–10)
   const corr = Math.max(1, Math.min(10, 8 - 2.5*(e.Cu||0) + 0.5*(e.Mg||0) - 0.5*(e.Zn||0) + 0.3*(e.Si||0)));
@@ -991,13 +1019,14 @@ function calcSS(e) {
   // Thermal conductivity
   const thermalK = 15 - 0.05*(e.Ni||0) + 0.1*(e.Mo||0) + 0.05*(e.Si||0);
   // UTS
-  const tensile = 480 + 10*(e.Cr||0) + 8*(e.Ni||0) + 25*(e.Mo||0) + 1500*(e.C||0) + 30*(e.Mn||0) + 40*(e.N||0);
-  const yieldStr = tensile * 0.45;
+  const tensile = Math.max(400, 500 + 3*((e.Cr||0)-18) + ((e.Ni||0)-8) + 20*(e.Mo||0) + 1200*((e.C||0)-0.07) + 8*((e.Mn||0)-1) + 350*(e.N||0));
+  const ytRatio = micro.includes('Duplex') ? 0.70 : (micro.includes('Ferrit') || micro.includes('Martin')) ? 0.65 : 0.42;
+        const yieldStr = tensile * ytRatio;
   const hardness = tensile * 0.28;
   // Modulus (austenitic vs ferritic)
   const modulus = micro.includes('Ferrit') || micro.includes('Martin') ? 210 : 193;
   // Corrosion: PREN-based score (PREN>40 = super-austenitic, >32 = 316L, >18 = 304)
-  const corr = Math.min(10, 2 + PREN/8);
+  const corr = Math.min(10, 3 + PREN/6);
   const magnetic = micro.includes('Ferrit') || micro.includes('Martin') ? 'Yes' : 'No (paramagnetic)';
   return { PREN, Creq, Nieq, micro, density, thermalK, tensile, yieldStr, hardness, modulus, corr, magnetic };
 }
@@ -1014,9 +1043,9 @@ function calcGlass(e) {
               + (e.Fe2O3||0)*12 + (e.TiO2||0)*(-0.5) ) / 100;  // ×10⁻⁶/°C
   // Transmittance at 550nm (Beer-Lambert simplified — Fe₂O₃ absorbs strongly)
   const fe2o3 = e.Fe2O3||0;
-  const transmit550 = Math.max(0, (0.974 - 2.8*fe2o3) * 100); // % for 3.2mm
+  const transmit550 = Math.max(0, (0.974 - 0.90*fe2o3) * 100); // % for 3.2mm
   // Solar weighted transmittance
-  const solarTransmit = Math.max(0, (0.965 - 3.5*fe2o3) * 100);
+  const solarTransmit = Math.max(0, (0.965 - 1.10*fe2o3) * 100);
   // Refractive index
   const ri = 1.458 + 0.005*(e.Na2O||0)/14 + 0.008*(e.TiO2||0) - 0.004*(e.B2O3||0)/13;
   // Softening temperature (approx, °C)
@@ -2249,7 +2278,7 @@ const TRANSLATIONS = {
     tab_library:'Material Library', tab_mixer:'Composition Mixer',
     tab_solar:'Solar Performance',  tab_compare:'Comparison',
     tab_newmat:'New Material Dev',  tab_cost:'Cost & Mfg (China)',
-    tab_optimizer:'Optimizer',
+    tab_optimizer:'Optimizer', tab_fullscreen:'⛶ Fullscreen', fs_title:'Fullscreen Mode', fs_desc:'Enter fullscreen to view the simulator without browser chrome. Use Esc or the exit button below to return.', fs_enter:'Enter Fullscreen', fs_exit:'Exit Fullscreen', fs_tips_title:'💡 Keyboard Shortcuts', fs_tip1:'Toggle fullscreen (browser native)', fs_tip2:'Exit fullscreen',
     sec_library:'Material Property Library',
     sec_mixer:'Elemental Composition Mixer',
     sec_solar:'Solar Panel Performance Analysis',
@@ -2291,7 +2320,7 @@ const TRANSLATIONS = {
     tab_library:'材料库',      tab_mixer:'成分混合器',
     tab_solar:'太阳能性能',   tab_compare:'对比分析',
     tab_newmat:'新材料开发',  tab_cost:'成本与制造（中国）',
-    tab_optimizer:'优化器',
+    tab_optimizer:'优化器', tab_fullscreen:'⛶ 全屏', fs_title:'全屏模式', fs_desc:'进入全屏模式以无干扰地查看模拟器。按 Esc 或下方按钮退出全屏。', fs_enter:'进入全屏', fs_exit:'退出全屏', fs_tips_title:'💡 快捷键', fs_tip1:'切换全屏（浏览器原生）', fs_tip2:'退出全屏',
     sec_library:'材料属性库',
     sec_mixer:'元素成分混合器',
     sec_solar:'太阳能板性能分析',
@@ -2353,7 +2382,33 @@ function setLang(lang) {
     : 'Solar Panel Material Simulator — Scientific Dashboard';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// ── FULLSCREEN API ─────────────────────────────────────────────────────────
+function launchFullscreen(el) {
+  showTab('fullscreen', el);
+  setTimeout(enterFullscreen, 250);
+}
+function enterFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    req.call(el).then(() => updateFsStatus()).catch(() => {
+      const s = document.getElementById('fs-status');
+      if (s) s.textContent = '⚠ Fullscreen blocked by browser. Try pressing F11 instead.';
+    });
+  }
+}
+function exitFullscreen() {
+  const ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+  if (ex && document.fullscreenElement) ex.call(document);
+}
+function updateFsStatus() {
+  const s = document.getElementById('fs-status');
+  if (s) s.textContent = document.fullscreenElement ? '✓ Fullscreen active — press Esc to exit' : '';
+}
+document.addEventListener('fullscreenchange', updateFsStatus);
+document.addEventListener('webkitfullscreenchange', updateFsStatus);
+
+addEventListener('DOMContentLoaded', () => {
   buildMaterialCards();
   initCharts();
   initMixerCharts();   // calls setMixFamily('al') → renderPresets + renderElemSliders + updateMixer
