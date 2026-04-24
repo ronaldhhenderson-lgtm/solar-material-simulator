@@ -264,21 +264,21 @@
   <div class="header-title">
     <div class="header-icon">☀️</div>
     <div>
-      <h1>Solar Panel <span>Material</span> Simulator</h1>
-      <div class="header-sub">Interactive Scientific Dashboard · Rule-of-Mixtures + Elemental Alloy Engine · v3.0 · <span style="color:var(--accent)">Ron Tsui</span></div>
+      <h1 data-i18n-html="h_title">Solar Panel <span style="color:var(--accent)">Material</span> Simulator</h1>
+      <div class="header-sub"><span data-i18n="h_sub">Interactive Scientific Dashboard · Rule-of-Mixtures + Elemental Alloy Engine · v3.0</span> · <span style="color:var(--accent)">Ron Tsui</span></div>
     </div>
   </div>
-  <span class="badge">⚗️ LAB MODE</span>
+  <button id="lang-btn" onclick="toggleLang()" style="background:rgba(0,212,255,0.12);border:1px solid rgba(0,212,255,0.3);color:var(--accent);padding:5px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;letter-spacing:0.06em;margin-right:8px">中文</button><span class="badge" data-i18n="h_badge">⚗️ LAB MODE</span>
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('library',this)"><span class="tab-icon">🧱</span>Material Library</div>
-  <div class="tab" onclick="showTab('mixer',this)"><span class="tab-icon">⚗️</span>Composition Mixer</div>
-  <div class="tab" onclick="showTab('solar',this)"><span class="tab-icon">☀️</span>Solar Performance</div>
-  <div class="tab" onclick="showTab('compare',this)"><span class="tab-icon">📊</span>Comparison</div>
-  <div class="tab" onclick="showTab('newmat',this)"><span class="tab-icon">🔬</span>New Material Dev</div>
+  <div class="tab active" onclick="showTab('library',this)"><span class="tab-icon">🧱</span><span data-i18n='tab_library'>Material Library</span></div>
+  <div class="tab" onclick="showTab('mixer',this)"><span class="tab-icon">⚗️</span><span data-i18n='tab_mixer'>Composition Mixer</span></div>
+  <div class="tab" onclick="showTab('solar',this)"><span class="tab-icon">☀️</span><span data-i18n='tab_solar'>Solar Performance</span></div>
+  <div class="tab" onclick="showTab('compare',this)"><span class="tab-icon">📊</span><span data-i18n='tab_compare'>Comparison</span></div>
+  <div class="tab" onclick="showTab('newmat',this)"><span class="tab-icon">🔬</span><span data-i18n='tab_newmat'>New Material Dev</span></div>
   <div class="tab" onclick="showTab('cost',this)"><span class="tab-icon">🏭</span>Cost & Mfg (China)</div>
-  <div class="tab" onclick="showTab('optimizer',this)"><span class="tab-icon">⚙️</span>Optimizer</div>
+  <div class="tab" onclick="showTab('optimizer',this)"><span class="tab-icon">⚙️</span><span data-i18n='tab_optimizer'>Optimizer</span></div>
 </div>
 
 <div class="main">
@@ -286,28 +286,28 @@
 <!-- ═══════════════════════════════ PANEL 1: LIBRARY ═══════════════════════════════ -->
 <div id="panel-library" class="panel active">
   <div class="section-header">
-    <h2>Material Property Library</h2>
+    <h2 data-i18n="sec_library">Material Property Library</h2>
     <div class="line"></div>
     <span style="font-size:0.75rem;color:var(--muted)">Click a material for detailed view</span>
   </div>
   <div class="grid4" id="mat-cards-grid"></div>
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Thermal Properties Comparison</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span><span data-i18n="ct_thermal">Thermal Properties Comparison</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartThermal"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Mechanical Properties</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span><span data-i18n="ct_mech">Mechanical Properties</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartMech"></canvas></div>
     </div>
   </div>
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Optical Properties (Solar)</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span><span data-i18n="ct_optical">Optical Properties (Solar)</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartOptical"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Multi-property Radar</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span><span data-i18n="ct_radar">Multi-property Radar</span></div>
       <div class="radar-wrap" style="height:280px"><canvas id="chartRadar"></canvas></div>
     </div>
   </div>
@@ -316,14 +316,14 @@
 <!-- ═══════════════════════════════ PANEL 2: MIXER ═══════════════════════════════ -->
 <div id="panel-mixer" class="panel">
   <div class="section-header">
-    <h2>Elemental Composition Mixer</h2>
+    <h2 data-i18n="sec_mixer">Elemental Composition Mixer</h2>
     <div class="line"></div>
     <span style="font-size:0.75rem;color:var(--muted)">Adjust element wt% → live material science calculations → predict alloy characteristics</span>
   </div>
 
   <!-- MATERIAL FAMILY SELECTOR -->
   <div class="card" style="border-color:rgba(0,212,255,0.25)">
-    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Select Material Family</div>
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span><span data-i18n="ct_family">Select Material Family</span></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap" id="mix-family-picker">
       <div onclick="setMixFamily('al')"   id="fam-al"    class="fam-btn fam-active" style="border-color:#a8c7fa;color:#a8c7fa;background:rgba(168,199,250,0.12)">⬡ Aluminum Alloys</div>
       <div onclick="setMixFamily('ss')"   id="fam-ss"    class="fam-btn"            style="border-color:rgba(255,255,255,0.1);color:var(--muted)">◈ Stainless Steel</div>
@@ -334,26 +334,26 @@
 
   <!-- PRESET GRADES -->
   <div class="mt20 card">
-    <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Load a Standard Grade / Preset</div>
+    <div class="card-title"><span class="dot" style="background:var(--accent4)"></span><span data-i18n="ct_preset">Load a Standard Grade / Preset</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px" id="mix-presets"></div>
   </div>
 
   <!-- ELEMENTAL SLIDERS + CALCULATION STEPS -->
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Elemental Composition (wt %)</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span><span data-i18n="ct_elem">Elemental Composition (wt %)</span></div>
       <div id="mix-elem-sliders" style="display:flex;flex-direction:column;gap:12px"></div>
       <div id="mix-balance-row" style="margin-top:14px;padding:10px 14px;border-radius:8px;font-family:monospace;font-size:0.82rem"></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Step-by-Step Material Science Calculation</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span><span data-i18n="ct_steps">Step-by-Step Material Science Calculation</span></div>
       <div id="mix-calc-steps" style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto"></div>
     </div>
   </div>
 
   <!-- PROPERTIES OUTPUT -->
   <div class="mt20 card">
-    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Predicted Alloy Characteristics</div>
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span><span data-i18n="ct_predicted">Predicted Alloy Characteristics</span></div>
     <!-- Grade match badge -->
     <div id="mix-grade-match" style="margin-bottom:16px"></div>
     <div id="mix-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
@@ -362,18 +362,18 @@
   <!-- CHARTS -->
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Composition Pie</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span><span data-i18n="ct_pie">Composition Pie</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartPie"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Property Radar — vs. Standard Grades</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span><span data-i18n="ct_propradar">Property Radar — vs. Standard Grades</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartMixLine"></canvas></div>
     </div>
   </div>
 
   <!-- MIXING RULE ANALYSIS -->
   <div class="mt20 card">
-    <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>Strengthening Mechanism Analysis</div>
+    <div class="card-title"><span class="dot" style="background:var(--accent4)"></span><span data-i18n="ct_strength">Strengthening Mechanism Analysis</span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="mix-rule-cards"></div>
   </div>
 </div>
@@ -381,28 +381,28 @@
 <!-- ═══════════════════════════════ PANEL 3: SOLAR ═══════════════════════════════ -->
 <div id="panel-solar" class="panel">
   <div class="section-header">
-    <h2>Solar Panel Performance Analysis</h2>
+    <h2 data-i18n="sec_solar">Solar Panel Performance Analysis</h2>
     <div class="line"></div>
     <span style="font-size:0.75rem;color:var(--muted)">Material impact on energy yield</span>
   </div>
   <div class="grid4" id="solar-kpis"></div>
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Thermal Loss vs. Temperature (by Material)</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span><span data-i18n="ct_therloss">Thermal Loss vs. Temperature (by Material)</span></div>
       <div class="chart-wrap" style="height:280px"><canvas id="chartTempLoss"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Annual Energy Yield Estimate</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span><span data-i18n="ct_yield">Annual Energy Yield Estimate</span></div>
       <div class="chart-wrap" style="height:280px"><canvas id="chartYield"></canvas></div>
     </div>
   </div>
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Absorptivity Spectrum Response</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span><span data-i18n="ct_absorb">Absorptivity Spectrum Response</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartSpectrum"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span>20-Year Degradation Model</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent4)"></span><span data-i18n="ct_degrad">20-Year Degradation Model</span></div>
       <div class="chart-wrap" style="height:260px"><canvas id="chartDegrade"></canvas></div>
     </div>
   </div>
@@ -411,7 +411,7 @@
 <!-- ═══════════════════════════════ PANEL 4: COMPARE ═══════════════════════════════ -->
 <div id="panel-compare" class="panel">
   <div class="section-header">
-    <h2>Material Comparison Matrix</h2>
+    <h2 data-i18n="sec_compare">Material Comparison Matrix</h2>
     <div class="line"></div>
   </div>
   <div class="card">
@@ -419,11 +419,11 @@
   </div>
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Cost vs. Performance Index</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span><span data-i18n="ct_costperf">Cost vs. Performance Index</span></div>
       <div class="chart-wrap" style="height:280px"><canvas id="chartScatter"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Suitability Score (Solar Applications)</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent3)"></span><span data-i18n="ct_suitability">Suitability Score (Solar Applications)</span></div>
       <div class="chart-wrap" style="height:280px"><canvas id="chartSuitability"></canvas></div>
     </div>
   </div>
@@ -432,13 +432,13 @@
 <!-- ═══════════════════════════════ PANEL 5: NEW MATERIAL ═══════════════════════════════ -->
 <div id="panel-newmat" class="panel">
   <div class="section-header">
-    <h2>New Material Development</h2>
+    <h2 data-i18n="sec_newmat">New Material Development</h2>
     <div class="line"></div>
     <span style="font-size:0.75rem;color:var(--muted)">Design custom materials and simulate performance</span>
   </div>
   <div class="grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--new)"></span>Material Properties Input</div>
+      <div class="card-title"><span class="dot" style="background:var(--new)"></span><span data-i18n="ct_matinput">Material Properties Input</span></div>
       <div class="form-grid" id="new-mat-form">
         <div class="form-group">
           <label>Material Name</label>
@@ -496,7 +496,7 @@
 <!-- ═══════════════════════════════ PANEL 6: COST & MFG (CHINA) ═══════════════════════════════ -->
 <div id="panel-cost" class="panel">
   <div class="section-header">
-    <h2>Cost &amp; Manufacturing Analysis — China</h2>
+    <h2 data-i18n="sec_cost">Cost &amp; Manufacturing Analysis — China</h2>
     <div class="line"></div>
     <span style="font-size:0.75rem;color:var(--muted)">2024–2025 market data · CNY &amp; USD · Per kg &amp; per m²</span>
   </div>
@@ -531,7 +531,7 @@
 
   <!-- Interactive cost calculator -->
   <div class="mt20 card">
-    <div class="card-title"><span class="dot" style="background:var(--new)"></span>🧮 Panel Cost Calculator — China Fabrication</div>
+    <div class="card-title"><span class="dot" style="background:var(--new)"></span>🧮 Panel <span data-i18n="ct_calc">Cost Calculator</span> — China Fabrication</div>
     <div class="grid3" style="gap:16px;margin-bottom:16px">
       <div class="form-group">
         <label>Panel Area (m²)</label>
@@ -562,7 +562,7 @@
 <!-- ═══════════════════════════════ PANEL 7: OPTIMIZER ═══════════════════════════════ -->
 <div id="panel-optimizer" class="panel">
   <div class="section-header">
-    <h2>⚙️ Optimal Ratio Finder</h2>
+    <h2 data-i18n="sec_optimizer">⚙️ Optimal Ratio Finder</h2>
     <div class="line"></div>
     <span style="font-size:0.75rem;color:var(--muted)">Grid-search over 4-component space · Full formula derivation</span>
   </div>
@@ -576,7 +576,7 @@
   <!-- OBJECTIVE + CONSTRAINTS -->
   <div class="mt20 grid2">
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Optimization Objective</div>
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span><span data-i18n="ct_obj">Optimization Objective</span></div>
       <div style="display:flex;flex-direction:column;gap:14px">
         <div class="form-group">
           <label>Select Objective Function</label>
@@ -2236,6 +2236,123 @@ function calcPanelCost() {
 // ══════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════
+//  CN / EN  TRANSLATION SYSTEM
+// ══════════════════════════════════════════════════
+const TRANSLATIONS = {
+  en: {
+    h_title:'Solar Panel <span style="color:var(--accent)">Material</span> Simulator',
+    h_sub:'Interactive Scientific Dashboard · Rule-of-Mixtures + Elemental Alloy Engine · v3.0',
+    h_badge:'⚗️ LAB MODE',
+    tab_library:'Material Library', tab_mixer:'Composition Mixer',
+    tab_solar:'Solar Performance',  tab_compare:'Comparison',
+    tab_newmat:'New Material Dev',  tab_cost:'Cost & Mfg (China)',
+    tab_optimizer:'Optimizer',
+    sec_library:'Material Property Library',
+    sec_mixer:'Elemental Composition Mixer',
+    sec_solar:'Solar Panel Performance Analysis',
+    sec_compare:'Material Comparison Matrix',
+    sec_newmat:'New Material Development',
+    sec_cost:'Cost & Manufacturing Analysis — China',
+    sec_optimizer:'⚙️ Optimal Ratio Finder',
+    ct_thermal:'Thermal Properties Comparison',
+    ct_mech:'Mechanical Properties',
+    ct_optical:'Optical Properties (Solar)',
+    ct_radar:'Multi-property Radar',
+    ct_family:'Select Material Family',
+    ct_preset:'Load a Standard Grade / Preset',
+    ct_elem:'Elemental Composition (wt %)',
+    ct_steps:'Step-by-Step Material Science Calculation',
+    ct_predicted:'Predicted Alloy Characteristics',
+    ct_pie:'Composition Pie',
+    ct_propradar:'Property Radar — vs. Standard Grades',
+    ct_strength:'Strengthening Mechanism Analysis',
+    ct_therloss:'Thermal Loss vs. Temperature (by Material)',
+    ct_yield:'Annual Energy Yield Estimate',
+    ct_absorb:'Absorptivity Spectrum Response',
+    ct_degrad:'20-Year Degradation Model',
+    ct_costperf:'Cost vs. Performance Index',
+    ct_suitability:'Suitability Score (Solar Applications)',
+    ct_matinput:'Material Properties Input',
+    ct_supply:'China Supply Chain & Manufacturing Costs',
+    ct_calc:'Cost Calculator',
+    ct_obj:'Optimization Objective',
+    ct_formula:'Formula & Calculation Reference',
+    btn_optimize:'⚙️ Run Optimizer',
+    btn_addmat:'+ Add to Library',
+    btn_analyze:'Analyze & Score',
+  },
+  zh: {
+    h_title:'太阳能板 <span style="color:var(--accent)">材料</span> 模拟器',
+    h_sub:'互动科学仪表盘 · 混合定律 + 元素合金引擎 · v3.0',
+    h_badge:'⚗️ 实验室模式',
+    tab_library:'材料库',      tab_mixer:'成分混合器',
+    tab_solar:'太阳能性能',   tab_compare:'对比分析',
+    tab_newmat:'新材料开发',  tab_cost:'成本与制造（中国）',
+    tab_optimizer:'优化器',
+    sec_library:'材料属性库',
+    sec_mixer:'元素成分混合器',
+    sec_solar:'太阳能板性能分析',
+    sec_compare:'材料对比矩阵',
+    sec_newmat:'新材料开发',
+    sec_cost:'成本与制造分析 — 中国',
+    sec_optimizer:'⚙️ 最优配比求解器',
+    ct_thermal:'热学性能对比',
+    ct_mech:'力学性能',
+    ct_optical:'光学性能（太阳能）',
+    ct_radar:'多维性能雷达图',
+    ct_family:'选择材料体系',
+    ct_preset:'加载标准牌号 / 预设',
+    ct_elem:'元素成分（质量分数 wt%）',
+    ct_steps:'逐步材料科学计算',
+    ct_predicted:'预测合金特性',
+    ct_pie:'成分饼图',
+    ct_propradar:'性能雷达 — 与标准牌号对比',
+    ct_strength:'强化机制分析',
+    ct_therloss:'热损失与温度关系',
+    ct_yield:'年发电量估算',
+    ct_absorb:'吸收率光谱响应',
+    ct_degrad:'20年衰减模型',
+    ct_costperf:'成本与性能指数',
+    ct_suitability:'适用性评分（太阳能应用）',
+    ct_matinput:'材料属性输入',
+    ct_supply:'中国供应链与制造成本',
+    ct_calc:'成本计算器',
+    ct_obj:'优化目标',
+    ct_formula:'公式与计算参考',
+    btn_optimize:'⚙️ 运行优化器',
+    btn_addmat:'+ 添加到库',
+    btn_analyze:'分析评分',
+  }
+};
+
+let currentLang = 'en';
+
+function toggleLang() {
+  setLang(currentLang === 'en' ? 'zh' : 'en');
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  const T = TRANSLATIONS[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (T[key] !== undefined) el.textContent = T[key];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    if (T[key] !== undefined) el.innerHTML = T[key];
+  });
+  const btn = document.getElementById('lang-btn');
+  if (btn) btn.textContent = lang === 'en' ? '中文' : 'EN';
+  // Update badge separately (has data-i18n but also needs correct text)
+  document.title = lang === 'zh'
+    ? '太阳能板材料模拟器 — 科学仪表盘'
+    : 'Solar Panel Material Simulator — Scientific Dashboard';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   buildMaterialCards();
   initCharts();
